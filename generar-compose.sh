@@ -32,6 +32,9 @@ generate_client() {
       - testing_net
     depends_on:
       - server
+    # Nota mental: esto es siempre un absolute path. No asume por defecto PWD, tenes que pasar el .
+    volumes:
+      - ./client/config.yaml:/config.yaml
 "
     compose_template+="${client_template}"
 }

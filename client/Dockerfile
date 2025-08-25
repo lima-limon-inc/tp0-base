@@ -16,5 +16,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -mod vendor -o bin/client github.com/7574-
 
 FROM busybox:latest
 COPY --from=builder /build/bin/client /client
-COPY ./client/config.yaml /config.yaml
+# Comento esto porque ahora el archivo config.yaml se va a obtener del docker volume
+# COPY ./client/config.yaml /config.yaml
 ENTRYPOINT ["/bin/sh"]
