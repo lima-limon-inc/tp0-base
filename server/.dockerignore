@@ -1,0 +1,2 @@
+# Ignoramos este archivo para no tener que modificar el Dockerfile
+./config.ini
