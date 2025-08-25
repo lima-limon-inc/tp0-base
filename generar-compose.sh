@@ -11,10 +11,12 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
-      - LOGGING_LEVEL=DEBUG
+      # Esto lo comento porque esta variable de ambiente se define en el config.ini
+      # - LOGGING_LEVEL=DEBUG
     networks:
       - testing_net
     volumes:
+    # Nota mental: esto es siempre un absolute path. No asume por defecto PWD, tenes que pasar el .
       - ./server/config.ini:/config.ini
 "
 
@@ -29,12 +31,12 @@ generate_client() {
     entrypoint: /client
     environment:
       - CLI_ID=${1}
-      - CLI_LOG_LEVEL=DEBUG
+      # Ditto LOGGING_LEVEL
+      # - CLI_LOG_LEVEL=DEBUG
     networks:
       - testing_net
     depends_on:
       - server
-    # Nota mental: esto es siempre un absolute path. No asume por defecto PWD, tenes que pasar el .
     volumes:
       - ./client/config.yaml:/config.yaml
 "
