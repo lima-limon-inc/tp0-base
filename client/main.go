@@ -64,6 +64,8 @@ func InitConfig() (*viper.Viper, error) {
 	return v, nil
 }
 
+
+
 // InitLogger Receives the log level to be set in go-logging as a string. This method
 // parses the string and set the level to the logger. If the level string is not
 // valid an error is returned
@@ -122,7 +124,13 @@ func main() {
 		LoopPeriod:    v.GetDuration("loop.period"),
 	}
 
-	client := common.NewClient(clientConfig)
+	bet, err := common.InitBet();
+	if err != nil {
+		log.Criticalf("%s", err)
+		return
+	}
+
+	client := common.NewClient(clientConfig, *bet)
 
 	// Fuente: https://pkg.go.dev/os/signal#Notify
 	// Uso este canal para avisarle al proceso padre que recibi el SIGTERM
