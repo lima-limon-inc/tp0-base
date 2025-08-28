@@ -23,16 +23,18 @@ type ClientConfig struct {
 type Client struct {
 	config ClientConfig
 	conn   net.Conn
+	killed bool
 }
 
 // Stop the client before hand.
-func (c *Client) AbruptClose() {
+func (c *Client) Close() {
      socket_err :=  c.conn.Close()
 	if socket_err == nil {
 	   log.Debug("action: close_socket | result: success | client_id: %v", c.config.ID);
      } else {
 	   log.Debug("action: close_socket | result: failure | client_id: %v", c.config.ID);
-    }
+	}
+	c.killed = true
 }
 
 // NewClient Initializes a new client receiving the configuration
@@ -40,6 +42,7 @@ func (c *Client) AbruptClose() {
 func NewClient(config ClientConfig) *Client {
 	client := &Client{
 		config: config,
+		killed: false,
 	}
 	return client
 }
@@ -65,6 +68,10 @@ func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+		// If the client is killed, break out of the loop inmediately
+		if c.killed {
+			break
+		}
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 

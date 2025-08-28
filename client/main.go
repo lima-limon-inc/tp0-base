@@ -132,7 +132,7 @@ func main() {
 	go func() {
 		s := <-channel
 		fmt.Println("Got signal:", s)
-		client.AbruptClose()
+		client.Close()
 	}()
 
 	client.StartClientLoop()
