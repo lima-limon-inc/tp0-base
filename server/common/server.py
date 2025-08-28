@@ -11,10 +11,13 @@ class Server:
 
         self._current_client: socket.socket = None
 
+        self._killed = False
+
     def finalize(self):
         self._server_socket.close()
         if self._current_client != None:
             self._current_client.close()
+        self._killed = True
 
     def run(self):
         """
@@ -27,7 +30,7 @@ class Server:
 
         # TODO: Modify this program to handle signal to graceful shutdown
         # the server
-        while True:
+        while not self._killed:
             self._current_client = self.__accept_new_connection()
             self.__handle_client_connection()
 
