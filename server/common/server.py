@@ -30,9 +30,15 @@ class Server:
 
         # TODO: Modify this program to handle signal to graceful shutdown
         # the server
+        # Despite only looping while this is alive, a signal could come at any time.
+        # With that in mind, we must catch any potential OSError in here as well
         while not self._killed:
-            self._current_client = self.__accept_new_connection()
-            self.__handle_client_connection()
+            try:
+                self._current_client = self.__accept_new_connection()
+                self.__handle_client_connection()
+            except OSError as e:
+                # If we catch an error, then most probably we received a signal that closed our sockets
+                break
 
     def __handle_client_connection(self):
         """
