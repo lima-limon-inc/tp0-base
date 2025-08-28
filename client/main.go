@@ -6,6 +6,10 @@ import (
 	"strings"
 	"time"
 
+
+	"os/signal"
+	"syscall"
+
 	"github.com/op/go-logging"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -95,6 +99,10 @@ func PrintConfig(v *viper.Viper) {
 }
 
 func main() {
+	// Con esta linea se ignoran todas las senales, con esto lograria solo
+	// atrapar SIGTERM e ignorar el resto.
+	// signal.Ignore()
+
 	v, err := InitConfig()
 	if err != nil {
 		log.Criticalf("%s", err)
@@ -115,5 +123,17 @@ func main() {
 	}
 
 	client := common.NewClient(clientConfig)
+
+	// Fuente: https://pkg.go.dev/os/signal#Notify
+	// Uso este canal para avisarle al proceso padre que recibi el SIGTERM
+	channel := make(chan os.Signal, 1)
+	signal.Notify(channel, syscall.SIGTERM)
+
+	go func() {
+		s := <-channel
+		fmt.Println("Got signal:", s)
+		client.AbruptClose()
+	}()
+
 	client.StartClientLoop()
 }

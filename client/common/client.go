@@ -25,6 +25,16 @@ type Client struct {
 	conn   net.Conn
 }
 
+// Stop the client before hand.
+func (c *Client) AbruptClose() {
+     socket_err :=  c.conn.Close()
+	if socket_err == nil {
+	   log.Debug("action: close_socket | result: success | client_id: %v", c.config.ID);
+     } else {
+	   log.Debug("action: close_socket | result: failure | client_id: %v", c.config.ID);
+    }
+}
+
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
 func NewClient(config ClientConfig) *Client {
