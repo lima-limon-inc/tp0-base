@@ -2,8 +2,7 @@ package common
 
 import (
 	// "bufio"
-	// "fmt"
-	"net"
+	"fmt"
 
 	"encoding/binary"
 	// "time"
@@ -21,7 +20,8 @@ type Values uint8
 // Using the Value* prefix to avoid collissions
 const (
 	ValueString Values = iota
-	ValueInteger
+	ValueUInteger64
+	ValueByte
 )
 
 // File that contains type serialization
@@ -31,7 +31,7 @@ const (
 // Value length: 1 byte
 // Value
 
-func SendString(s string) []byte {
+func SerializeString(s string) []byte {
 	bytes := []byte(s)
 	length := len(bytes)
 
@@ -40,7 +40,7 @@ func SendString(s string) []byte {
 
 	// 2 additional bytes
 	buffer[0] = byte(ValueString)
-	buffer[1] = byte(length)
+	buffer[1] = byte(buffer_len)
 
 	for i := 0; i < length; i++ {
 		current_byte := bytes[i]
@@ -50,7 +50,7 @@ func SendString(s string) []byte {
 	return buffer
 }
 
-func SendInteger(i uint64) []byte {
+func SerializeUInteger64(i uint64) []byte {
 	length := 8
 
 	buffer_len := length + 2
@@ -58,10 +58,24 @@ func SendInteger(i uint64) []byte {
 	buffer := make([]byte, buffer_len)
 
 	// 2 additional bytes
-	buffer[0] = byte(ValueString)
-	buffer[1] = byte(length)
+	buffer[0] = byte(ValueUInteger64)
+	buffer[1] = byte(buffer_len)
 
 	binary.BigEndian.PutUint64(buffer[2:buffer_len], i)
 
+	return buffer
+}
+
+func SerializeByte(b byte) []byte {
+	length := 1
+
+	buffer_len := length + 2
+
+	buffer := make([]byte, buffer_len)
+
+	// 2 additional bytes
+	buffer[0] = byte(ValueByte)
+	buffer[1] = byte(buffer_len)
+	buffer[2] = b
 	return buffer
 }

@@ -1,8 +1,9 @@
 package common
 
 import (
-	"bufio"
 	"fmt"
+
+	"bufio"
 	"net"
 	"time"
 	"os"
@@ -28,7 +29,50 @@ type Bet struct {
 	surname       string
 	document      string
 	birthday      string
-	amount        int
+	amount        uint64
+}
+
+type ClientValues uint8
+
+// Using the Client* prefix to avoid collissions
+const (
+	ClientBet ClientValues = iota
+)
+
+// A Bet is serialized as the following:
+// A byte indicating that it's a bet
+// Its length
+// All the rest of the elements serialized
+func (b *Bet) serialize() []byte {
+	name := SerializeString(b.name)
+	surname := SerializeString(b.surname)
+	document := SerializeString(b.document)
+	birthday := SerializeString(b.birthday)
+	amount := SerializeUInteger64(b.amount)
+
+	fields := append(name, surname...)
+	fields = append(fields, document...)
+	fields = append(fields, birthday...)
+	fields = append(fields, amount...)
+
+	length := len(fields)
+
+	buffer_len := length + 2
+	buffer := make([]byte, buffer_len)
+
+	buffer[0] = byte(ClientBet)
+	buffer[1] = byte(buffer_len)
+	for i := 0; i < length; i++ {
+		current_byte := fields[i]
+		buffer[i + 2] = current_byte
+	}
+
+	fmt.Printf("Bet\n")
+	fmt.Printf("%v\n", buffer)
+	fmt.Printf("%#v\n", buffer)
+	fmt.Printf("%+v\n", buffer)
+
+	return buffer
 }
 
 // I avoided bet for simplicity's sake and because the environment variables are
@@ -63,7 +107,7 @@ func InitBet() (*Bet, error) {
 		surname: surname ,
 		document: document,
 		birthday: birthday,
-		amount: amount,
+		amount: uint64(amount),
 	}
 
 	return bet, err
@@ -117,6 +161,22 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
+func (c *Client) sendToServer() error {
+	bet := c.bet.serialize()
+	length := len(bet)
+
+	var sent = 0
+	var err error
+	for offset := 0 ; offset < length ; offset += sent {
+		sent, err = c.conn.Write(bet[offset:])
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
@@ -130,12 +190,8 @@ func (c *Client) StartClientLoop() {
 		c.createClientSocket()
 
 		// TODO: Modify the send to avoid short-write
-		fmt.Fprintf(
-			c.conn,
-			"[CLIENT %v] Message N°%v\n",
-			c.config.ID,
-			msgID,
-		)
+		c.sendToServer()
+
 		msg, err := bufio.NewReader(c.conn).ReadString('\n')
 		c.conn.Close()
 
