@@ -124,13 +124,17 @@ func main() {
 		LoopPeriod:    v.GetDuration("loop.period"),
 	}
 
-	bet, err := common.InitBet();
+	// bet, err := common.InitBet();
+	// if err != nil {
+	// 	log.Criticalf("%s", err)
+	// 	return
+	// }
+
+	client, err := common.NewClient(clientConfig)
 	if err != nil {
 		log.Criticalf("%s", err)
 		return
 	}
-
-	client := common.NewClient(clientConfig, *bet)
 
 	// Fuente: https://pkg.go.dev/os/signal#Notify
 	// Uso este canal para avisarle al proceso padre que recibi el SIGTERM

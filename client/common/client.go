@@ -12,16 +12,24 @@ import (
 	"github.com/op/go-logging"
 
 	"github.com/pkg/errors"
+
+	"encoding/csv"
 )
 
 var log = logging.MustGetLogger("log")
 
+const (
+	// Max batch size is 8 KILO bytes aka 8 thousand bytes
+	MAX_BATCH_SIZE int  = 8000
+)
+
 // ClientConfig Configuration used by the client
 type ClientConfig struct {
-	ID            string
-	ServerAddress string
-	LoopAmount    int
-	LoopPeriod    time.Duration
+	ID                     string
+	ServerAddress          string
+	LoopAmount             int
+	LoopPeriod             time.Duration
+	MaxBetAmountInBatch    int
 }
 
 type Bet struct {
@@ -72,69 +80,69 @@ func (b *Bet) serialize(ID string) []byte {
 	return buffer
 }
 
-func deserialize(data []byte) *Bet {
-	// Bet indicator [2]
-	// total_size := data[1]
+// func deserialize(data []byte) *Confirmation {
+// 	// Bet indicator [2]
+// 	// total_size := data[1]
 
-	// String indicator
-	string_identifier := 2
-	id_size_pos := string_identifier + 1
-	id_size_b := data[id_size_pos]
-	id_size := int(id_size_b)
-	// id_end := id_size_pos + 1 + id_size - 2
-	// id := DeserializeString(data[id_size_pos + 1:id_end])
+// 	// String indicator
+// 	string_identifier := 2
+// 	id_size_pos := string_identifier + 1
+// 	id_size_b := data[id_size_pos]
+// 	id_size := int(id_size_b)
+// 	// id_end := id_size_pos + 1 + id_size - 2
+// 	// id := DeserializeString(data[id_size_pos + 1:id_end])
 
-	// String indicator
-	name_indicator_pos := string_identifier + id_size + 2
-	name_size_pos := name_indicator_pos + 1
-	name_size_b := data[name_size_pos]
-	name_size := int(name_size_b)
-	name_end := name_size_pos + 1 + name_size
-	name := DeserializeString(data[name_size_pos + 1:name_end])
+// 	// String indicator
+// 	name_indicator_pos := string_identifier + id_size + 2
+// 	name_size_pos := name_indicator_pos + 1
+// 	name_size_b := data[name_size_pos]
+// 	name_size := int(name_size_b)
+// 	name_end := name_size_pos + 1 + name_size
+// 	name := DeserializeString(data[name_size_pos + 1:name_end])
 
-	// String indicator
-	surname_indicator := name_indicator_pos + name_size + 2
-	surname_size_pos := surname_indicator + 1
-	surname_size_b := data[surname_size_pos]
-	surname_size := int(surname_size_b)
-	surname_end := surname_size_pos + 1 + surname_size
-	surname := DeserializeString(data[surname_size_pos + 1:surname_end])
+// 	// String indicator
+// 	surname_indicator := name_indicator_pos + name_size + 2
+// 	surname_size_pos := surname_indicator + 1
+// 	surname_size_b := data[surname_size_pos]
+// 	surname_size := int(surname_size_b)
+// 	surname_end := surname_size_pos + 1 + surname_size
+// 	surname := DeserializeString(data[surname_size_pos + 1:surname_end])
 
-	// String indicator
-	document_indicator := surname_indicator + surname_size + 2
-	document_size_pos := document_indicator + 1
-	document_size_b := data[document_size_pos]
-	document_size := int(document_size_b)
-	document_end := document_size_pos + 1 + document_size
-	document := DeserializeString(data[document_size_pos + 1:document_end])
+// 	// String indicator
+// 	document_indicator := surname_indicator + surname_size + 2
+// 	document_size_pos := document_indicator + 1
+// 	document_size_b := data[document_size_pos]
+// 	document_size := int(document_size_b)
+// 	document_end := document_size_pos + 1 + document_size
+// 	document := DeserializeString(data[document_size_pos + 1:document_end])
 
-	// String indicator
-	birthday_indicator := document_indicator + document_size + 2
-	birthday_size_pos := birthday_indicator + 1
-	birthday_size_b := data[birthday_size_pos]
-	birthday_size := int(birthday_size_b)
-	birthday_end := birthday_size_pos + 1 + birthday_size
-	birthday := DeserializeString(data[birthday_size_pos + 1:birthday_end])
+// 	// String indicator
+// 	birthday_indicator := document_indicator + document_size + 2
+// 	birthday_size_pos := birthday_indicator + 1
+// 	birthday_size_b := data[birthday_size_pos]
+// 	birthday_size := int(birthday_size_b)
+// 	birthday_end := birthday_size_pos + 1 + birthday_size
+// 	birthday := DeserializeString(data[birthday_size_pos + 1:birthday_end])
 
-	// Integer indicator
-	amount_indicator := birthday_indicator + birthday_size + 2
-	amount_size_pos := amount_indicator + 1
-	amount_size_b := data[amount_size_pos]
-	amount_size := int(amount_size_b)
-	amount_pos := amount_size_pos + 1
-	amount_end := amount_pos + amount_size
-	amount := DeserializeUInteger64(data[amount_pos:amount_end])
+// 	// Integer indicator
+// 	amount_indicator := birthday_indicator + birthday_size + 2
+// 	amount_size_pos := amount_indicator + 1
+// 	amount_size_b := data[amount_size_pos]
+// 	amount_size := int(amount_size_b)
+// 	amount_pos := amount_size_pos + 1
+// 	amount_end := amount_pos + amount_size
+// 	amount := DeserializeUInteger64(data[amount_pos:amount_end])
 
-	bet := &Bet {
-			name: name,
-			surname: surname,
-			document: document,
-			birthday: birthday,
-			amount: amount,
-	}
+// 	bet := &Bet {
+// 			name: name,
+// 			surname: surname,
+// 			document: document,
+// 			birthday: birthday,
+// 			amount: amount,
+// 	}
 
-	return bet
-}
+// 	return bet
+// }
 
 
 // I avoided bet for simplicity's sake and because the environment variables are
@@ -177,11 +185,12 @@ func InitBet() (*Bet, error) {
 
 // Client Entity that encapsulates how
 type Client struct {
-	config ClientConfig
-	conn   net.Conn
-	killed bool
+	config      ClientConfig
+	agencyFile  csv.Reader
+	conn        net.Conn
+	killed      bool
 
-	bet    Bet
+	bet         Bet
 }
 
 // Stop the client before hand.
@@ -197,14 +206,21 @@ func (c *Client) Close() {
 
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
-func NewClient(config ClientConfig, bet Bet) *Client {
+func NewClient(config ClientConfig) (*Client, error) {
+	data_path := ".data/dataset/agency-" + config.ID + ".csv"
+	println(data_path)
+	agency_file, err := os.Open(data_path)
+	if err != nil {
+		return nil, err
+	}
+	agency_reader := csv.NewReader(agency_file);
+
 	client := &Client{
 		config: config,
 		killed: false,
-
-		bet: bet,
+		agencyFile: *agency_reader,
 	}
-	return client
+	return client, nil
 }
 
 // CreateClientSocket Initializes client socket. In case of
@@ -239,6 +255,62 @@ func (c *Client) sendToServer(data []byte) error {
 	return nil
 }
 
+// Will send a batch of complete bets to the server
+// The amount of bets will depend on the following equation:
+// min(max_amount, 8kb of data)
+// Initial bet is used when a bet was succesfully serialized, but was unable to fit in the previous batch
+func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error) {
+	buffer := make([]byte, MAX_BATCH_SIZE)
+
+	var offset = 0
+	var occupied_size = 0
+	var left_out_bet *Bet = nil
+
+	if initial_bet != nil {
+		serialized_bet := initial_bet.serialize(c.config.ID)
+		copy(buffer, serialized_bet)
+		offset += len(serialized_bet)
+		occupied_size += len(serialized_bet)
+	}
+
+	max_batches := c.config.MaxBetAmountInBatch;
+	for current_batch := 1 ; current_batch < max_batches; current_batch += 1 {
+		record, err := c.agencyFile.Read()
+		name          := record[0]
+		surname       := record[1]
+		document      := record[2]
+		birthday      := record[3]
+		amount, err   := strconv.ParseUint(record[4], 10, 64)
+		if err != err {
+			return nil, nil, err
+		}
+
+		bet := &Bet {
+			name: name,
+			surname: surname,
+			document: document,
+			birthday: birthday,
+			amount: uint64(amount),
+		}
+
+		serialized_bet := bet.serialize(c.config.ID)
+		if occupied_size + len(serialized_bet) > MAX_BATCH_SIZE {
+			// Cotemplates the case where a bet does not fit inside the current batch
+			left_out_bet = bet
+			break
+		} else {
+			// This is the case where it fits
+			for i := 0; i < len(serialized_bet); i++ {
+				buffer[offset + i] = serialized_bet[i]
+			}
+			offset += len(serialized_bet)
+		}
+
+	}
+
+	return buffer, left_out_bet, nil
+}
+
 func (c *Client) receiveMessage(size int) ([]byte, error) {
 	buffer := make([]byte, size)
 
@@ -259,6 +331,7 @@ func (c *Client) receiveMessage(size int) ([]byte, error) {
 func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
+	var initial_bet *Bet = nil
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
 		// If the client is killed, break out of the loop inmediately
 		if c.killed {
@@ -267,18 +340,14 @@ func (c *Client) StartClientLoop() {
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 
-		bet := c.bet.serialize(c.config.ID)
+		bets, left_out_bet, err := c.createBatch(initial_bet)
+		initial_bet = left_out_bet
 
 		// TODO: Modify the send to avoid short-write
-		c.sendToServer(bet)
+		c.sendToServer(bets)
 
-		msg, err := c.receiveMessage(len(bet))
-
-		received_bet := deserialize(msg)
-
-		// msg, err := bufio.NewReader(c.conn).ReadString('\n')
-		c.conn.Close()
-
+		// Now we receive a single byte represent the exit stauts on the server side
+		msg, err := c.receiveMessage(1)
 		if err != nil {
 			// TODO: Actualizar
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
@@ -288,10 +357,20 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
-		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
-			received_bet.document,
-			received_bet.amount,
-		)
+		exit_status := int8(msg[0])
+		if exit_status != 0 {
+			log.Errorf("action: apuestas_enviadas | result: fail | dni: %v | server_exit_status: %v",
+				c.config.ID,
+				exit_status,
+			)
+			return
+		}
+
+		// msg, err := bufio.NewReader(c.conn).ReadString('\n')
+		c.conn.Close()
+
+
+		log.Infof("action: apuestas_enviadas | result: success")
 
 		// Wait a time between sending one message and the next one
 		time.Sleep(c.config.LoopPeriod)
