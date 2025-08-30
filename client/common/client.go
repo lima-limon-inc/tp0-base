@@ -263,14 +263,12 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error) {
 	buffer := make([]byte, MAX_BATCH_SIZE)
 
 	var offset = 0
-	var occupied_size = 0
 	var left_out_bet *Bet = nil
 
 	if initial_bet != nil {
 		serialized_bet := initial_bet.serialize(c.config.ID)
 		copy(buffer, serialized_bet)
 		offset += len(serialized_bet)
-		occupied_size += len(serialized_bet)
 	}
 
 	max_batches := c.config.MaxBetAmountInBatch;
@@ -294,7 +292,7 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error) {
 		}
 
 		serialized_bet := bet.serialize(c.config.ID)
-		if occupied_size + len(serialized_bet) > MAX_BATCH_SIZE {
+		if offset + len(serialized_bet) > MAX_BATCH_SIZE {
 			// Cotemplates the case where a bet does not fit inside the current batch
 			left_out_bet = bet
 			break
@@ -308,7 +306,7 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error) {
 
 	}
 
-	return buffer, left_out_bet, nil
+	return buffer[0:offset], left_out_bet, nil
 }
 
 func (c *Client) receiveMessage(size int) ([]byte, error) {
