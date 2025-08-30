@@ -53,7 +53,6 @@ def main():
 
     # Defino este closure para frenar al server
     def signal_handler(sig, frame):
-        print(server)
         server.finalize()
 
     signal.signal(signal.SIGTERM, signal_handler)
