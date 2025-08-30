@@ -19,9 +19,9 @@ type Values uint8
 
 // Using the Value* prefix to avoid collissions
 const (
-	ValueString Values = iota
-	ValueUInteger64
-	ValueByte
+	ValueString Values = 0
+	ValueUInteger64 Values = 1
+	ValueByte Values = 2
 )
 
 // File that contains type serialization
@@ -30,7 +30,6 @@ const (
 // Value type: 1 byte
 // Value length: 1 byte
 // Value
-
 func SerializeString(s string) []byte {
 	bytes := []byte(s)
 	length := len(bytes)

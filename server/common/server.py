@@ -1,11 +1,14 @@
 import socket
 import logging
+from . utils import Bet
+from . import protocol
 
 
 class Server:
     def __init__(self, port, listen_backlog):
         # Initialize server socket
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
 
@@ -40,6 +43,20 @@ class Server:
                 # If we catch an error, then most probably we received a signal that closed our sockets
                 break
 
+    # Size: Amount of bytes to read
+    def __receive_bytes(self, size) -> bytes:
+        buff: bytes  = b''
+        remaining_size = size
+        while remaining_size > 0:
+            print("1")
+            # Received bytes
+            received = self._current_client.recv(size)
+            buff = buff + received
+            remaining_size -= len(received)
+            print(buff)
+
+        return buff
+
     def __handle_client_connection(self):
         """
         Read message from a specific client socket and closes the socket
@@ -49,6 +66,23 @@ class Server:
         """
         try:
             # TODO: Modify the receive to avoid short-reads
+
+            # We start of reading two bytes to check how much we should read
+            initial_size = self.__receive_bytes(2)
+            print("Initial size")
+            print(initial_size)
+
+            size = initial_size[1:2]
+            print(size)
+            size_i = int.from_bytes(size, byteorder='big', signed=True)
+            print("Yo")
+            print(size_i)
+
+            # Now, we read all that data
+            bet_bytes = self.__receive_bytes(size_i - 2)
+            bet = self.__deserialize(bet_bytes)
+            print(bet)
+
             msg = self._current_client.recv(1024).rstrip().decode('utf-8')
             addr = self._current_client.getpeername()
             logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
@@ -72,3 +106,48 @@ class Server:
         c, addr = self._server_socket.accept()
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
         return c
+
+    def __deserialize(self, serialized_bet: bytes) -> Bet :
+        rest = serialized_bet
+
+        string_type = rest[0:1]
+        name_len = rest[1:2]
+        name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
+        first_name = protocol.DeserializeString(rest[1:name_len_i])
+        print(name_len_i)
+        print(rest)
+        rest = rest[name_len_i:]
+        print(rest)
+        print(first_name)
+
+        string_type = rest[0:1]
+        name_len = rest[1:2]
+        name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
+        last_name = protocol.DeserializeString(rest[1:name_len_i])
+        rest = rest[name_len_i:]
+        print(last_name)
+
+        string_type = rest[0:1]
+        name_len = rest[1:2]
+        name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
+        document = protocol.DeserializeString(rest[1:name_len_i])
+        rest = rest[name_len_i:]
+        print(document)
+
+        string_type = rest[0:1]
+        name_len = rest[1:2]
+        name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
+        birthday = protocol.DeserializeString(rest[1:name_len_i])
+        rest = rest[name_len_i:]
+        print(birthday)
+
+        integer_type = rest[0:1]
+        name_len = rest[1:2]
+        name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
+        amount = protocol.DeserializeUInteger64(rest[1:name_len_i])
+        rest = rest[name_len_i:]
+        print(amount)
+
+
+        # name_length = protocol.DeserializeUInteger64(name_len)
+

@@ -36,7 +36,7 @@ type ClientValues uint8
 
 // Using the Client* prefix to avoid collissions
 const (
-	ClientBet ClientValues = iota
+	ClientBet ClientValues = 0
 )
 
 // A Bet is serialized as the following:
