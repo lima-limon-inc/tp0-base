@@ -22,7 +22,7 @@ class Bet:
         self.last_name = last_name
         self.document = document
         self.birthdate = datetime.date.fromisoformat(birthdate)
-        self.number = number
+        self.number = int(number)
 
 """ Checks whether a bet won the prize or not. """
 def has_won(bet: Bet) -> bool:

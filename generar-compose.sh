@@ -31,6 +31,11 @@ generate_client() {
     entrypoint: /client
     environment:
       - CLI_ID=${1}
+      - NOMBRE=MATIAS
+      - APELLIDO=PEREZ
+      - DOCUMENTO=12345678
+      - NACIMIENTO=2009-12-14
+      - NUMERO=1234
       # Ditto LOGGING_LEVEL
       # - CLI_LOG_LEVEL=DEBUG
     networks:
