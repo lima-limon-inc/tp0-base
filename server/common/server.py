@@ -55,6 +55,16 @@ class Server:
 
         return buff
 
+    # Size: Amount of bytes to read
+    def __send_bytes(self, data):
+        size = len(data)
+        remaining_size = size
+        while remaining_size > 0:
+            # Received bytes
+            sent_data = self._current_client.send(data)
+            remaining_size -= sent_data
+
+
     def __handle_client_connection(self):
         """
         Read message from a specific client socket and closes the socket
@@ -85,7 +95,8 @@ class Server:
             # logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
             # TODO: Modify the send to avoid short-writes
             entire_message = initial_size + bet_bytes
-            self._current_client.send("{}\n".format(entire_message).encode('utf-8'))
+            # self._current_client.send("{}\n".format(entire_message).encode('utf-8'))
+            self.__send_bytes(entire_message)
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")
         finally:
