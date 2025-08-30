@@ -37,7 +37,7 @@ func SerializeString(s string) []byte {
 
 	// 2 additional bytes
 	buffer[0] = byte(ValueString)
-	buffer[1] = byte(buffer_len)
+	buffer[1] = byte(length)
 
 	for i := 0; i < length; i++ {
 		current_byte := bytes[i]
@@ -67,7 +67,7 @@ func SerializeUInteger64(i uint64) []byte {
 
 	// 2 additional bytes
 	buffer[0] = byte(ValueUInteger64)
-	buffer[1] = byte(buffer_len)
+	buffer[1] = byte(length)
 
 	binary.BigEndian.PutUint64(buffer[2:buffer_len], i)
 
@@ -83,7 +83,7 @@ func SerializeByte(b byte) []byte {
 
 	// 2 additional bytes
 	buffer[0] = byte(ValueByte)
-	buffer[1] = byte(buffer_len)
+	buffer[1] = byte(length)
 	buffer[2] = b
 	return buffer
 }

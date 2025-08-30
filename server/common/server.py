@@ -82,7 +82,7 @@ class Server:
             size_i = int.from_bytes(size, byteorder='big', signed=True)
 
             # Now, we read all that data
-            bet_bytes = self.__receive_bytes(size_i - 2)
+            bet_bytes = self.__receive_bytes(size_i)
             bet = self.__deserialize(bet_bytes)
             store_bets([bet])
             dni = bet.document
@@ -119,41 +119,41 @@ class Server:
     def __deserialize(self, serialized_bet: bytes) -> Bet :
         rest = serialized_bet
 
-        agency_type = rest[0:1]
-        name_len = rest[1:2]
-        name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
-        agency = protocol.DeserializeString(rest[1:name_len_i])
-        rest = rest[name_len_i:]
+        string_type = rest[0:1] # 0
+        name_len = rest[1:2]    # 1
+        name_len_i = int.from_bytes(name_len, byteorder='big', signed=True) # 1
+        agency = protocol.DeserializeString(rest[2: 2 + name_len_i])
+        rest = rest[name_len_i + 2:]
 
         string_type = rest[0:1]
         name_len = rest[1:2]
         name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
-        first_name = protocol.DeserializeString(rest[1:name_len_i])
-        rest = rest[name_len_i:]
+        first_name = protocol.DeserializeString(rest[2: 2 + name_len_i ])
+        rest = rest[name_len_i + 2:]
 
         string_type = rest[0:1]
         name_len = rest[1:2]
         name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
-        last_name = protocol.DeserializeString(rest[1:name_len_i])
-        rest = rest[name_len_i:]
+        last_name = protocol.DeserializeString(rest[2: 2 + name_len_i ])
+        rest = rest[name_len_i + 2:]
 
         string_type = rest[0:1]
         name_len = rest[1:2]
         name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
-        document = protocol.DeserializeString(rest[1:name_len_i])
-        rest = rest[name_len_i:]
+        document = protocol.DeserializeString(rest[2: 2 + name_len_i ])
+        rest = rest[name_len_i + 2:]
 
         string_type = rest[0:1]
         name_len = rest[1:2]
         name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
-        birthday = protocol.DeserializeString(rest[1:name_len_i])
-        rest = rest[name_len_i:]
+        birthday = protocol.DeserializeString(rest[2: 2 + name_len_i ])
+        rest = rest[name_len_i + 2:]
 
         integer_type = rest[0:1]
         name_len = rest[1:2]
         name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
-        amount = protocol.DeserializeUInteger64(rest[1:name_len_i])
-        rest = rest[name_len_i:]
+        amount = protocol.DeserializeUInteger64(rest[2: 2 + name_len_i ])
+        rest = rest[name_len_i + 2:]
 
         return Bet(agency, first_name, last_name, document, birthday, amount)
 

@@ -63,7 +63,7 @@ func (b *Bet) serialize(ID string) []byte {
 	buffer := make([]byte, buffer_len)
 
 	buffer[0] = byte(ClientBet)
-	buffer[1] = byte(buffer_len)
+	buffer[1] = byte(length)
 	for i := 0; i < length; i++ {
 		current_byte := fields[i]
 		buffer[i + 2] = current_byte
@@ -77,52 +77,53 @@ func deserialize(data []byte) *Bet {
 	// total_size := data[1]
 
 	// String indicator
-	id_indicator := 2
-	id_size_pos := id_indicator + 1
+	string_identifier := 2
+	id_size_pos := string_identifier + 1
 	id_size_b := data[id_size_pos]
 	id_size := int(id_size_b)
 	// id_end := id_size_pos + 1 + id_size - 2
 	// id := DeserializeString(data[id_size_pos + 1:id_end])
 
 	// String indicator
-	name_indicator := id_indicator + id_size
-	name_size_pos := name_indicator + 1
+	name_indicator_pos := string_identifier + id_size + 2
+	name_size_pos := name_indicator_pos + 1
 	name_size_b := data[name_size_pos]
 	name_size := int(name_size_b)
-	name_end := name_size_pos + 1 + name_size - 2
+	name_end := name_size_pos + 1 + name_size
 	name := DeserializeString(data[name_size_pos + 1:name_end])
 
 	// String indicator
-	surname_indicator := name_indicator + name_size
+	surname_indicator := name_indicator_pos + name_size + 2
 	surname_size_pos := surname_indicator + 1
 	surname_size_b := data[surname_size_pos]
 	surname_size := int(surname_size_b)
-	surname_end := surname_size_pos + 1 + surname_size - 2
+	surname_end := surname_size_pos + 1 + surname_size
 	surname := DeserializeString(data[surname_size_pos + 1:surname_end])
 
 	// String indicator
-	document_indicator := surname_indicator + surname_size
+	document_indicator := surname_indicator + surname_size + 2
 	document_size_pos := document_indicator + 1
 	document_size_b := data[document_size_pos]
 	document_size := int(document_size_b)
-	document_end := document_size_pos + 1 + document_size - 2
+	document_end := document_size_pos + 1 + document_size
 	document := DeserializeString(data[document_size_pos + 1:document_end])
 
 	// String indicator
-	birthday_indicator := document_indicator + document_size
+	birthday_indicator := document_indicator + document_size + 2
 	birthday_size_pos := birthday_indicator + 1
 	birthday_size_b := data[birthday_size_pos]
 	birthday_size := int(birthday_size_b)
-	birthday_end := birthday_size_pos + 1 + birthday_size - 2
+	birthday_end := birthday_size_pos + 1 + birthday_size
 	birthday := DeserializeString(data[birthday_size_pos + 1:birthday_end])
 
 	// Integer indicator
-	amount_indicator := birthday_indicator + birthday_size
+	amount_indicator := birthday_indicator + birthday_size + 2
 	amount_size_pos := amount_indicator + 1
 	amount_size_b := data[amount_size_pos]
 	amount_size := int(amount_size_b)
-	amount_end := amount_size_pos + 1 + amount_size - 2
-	amount := DeserializeUInteger64(data[amount_size_pos + 1:amount_end])
+	amount_pos := amount_size_pos + 1
+	amount_end := amount_pos + amount_size
+	amount := DeserializeUInteger64(data[amount_pos:amount_end])
 
 	bet := &Bet {
 			name: name,
