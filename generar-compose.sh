@@ -44,6 +44,7 @@ generate_client() {
       - server
     volumes:
       - ./client/config.yaml:/config.yaml
+      - ./.data/dataset/agency-${1}.csv:/agency-${1}.csv
 "
     compose_template+="${client_template}"
 }
