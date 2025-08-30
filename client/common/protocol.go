@@ -1,8 +1,6 @@
 package common
 
 import (
-	// "bufio"
-	"fmt"
 
 	"encoding/binary"
 	// "time"
@@ -49,6 +47,17 @@ func SerializeString(s string) []byte {
 	return buffer
 }
 
+func DeserializeString(data []byte) string {
+	received_string := string(data)
+
+	return received_string
+}
+
+func DeserializeUInteger64(data []byte) uint64 {
+	integer := binary.BigEndian.Uint64(data)
+
+	return integer
+}
 func SerializeUInteger64(i uint64) []byte {
 	length := 8
 

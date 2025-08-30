@@ -3,7 +3,7 @@ package common
 import (
 	"fmt"
 
-	"bufio"
+	// "bufio"
 	"net"
 	"time"
 	"os"
@@ -76,6 +76,83 @@ func (b *Bet) serialize(ID string) []byte {
 
 	return buffer
 }
+
+func deserialize(data []byte) *Bet {
+	// Bet indicator [2]
+	// total_size := data[1]
+
+	// String indicator
+	println("ID")
+	id_indicator := 2
+	id_size_pos := id_indicator + 1
+	id_size_b := data[id_size_pos]
+	id_size := int(id_size_b)
+	id_end := id_size_pos + 1 + id_size - 2
+	id := DeserializeString(data[id_size_pos + 1:id_end])
+	println(id)
+
+	// String indicator
+	println("NAME")
+	name_indicator := id_indicator + id_size
+	println(name_indicator)
+	name_size_pos := name_indicator + 1
+	name_size_b := data[name_size_pos]
+	name_size := int(name_size_b)
+	name_end := name_size_pos + 1 + name_size - 2
+	println(name_size_pos)
+	println(name_end)
+	name := DeserializeString(data[name_size_pos + 1:name_end])
+	println(name)
+
+	// String indicator
+	surname_indicator := name_indicator + name_size
+	surname_size_pos := surname_indicator + 1
+	surname_size_b := data[surname_size_pos]
+	surname_size := int(surname_size_b)
+	surname_end := surname_size_pos + 1 + surname_size - 2
+	surname := DeserializeString(data[surname_size_pos + 1:surname_end])
+	println(surname)
+
+	// String indicator
+	document_indicator := surname_indicator + surname_size
+	document_size_pos := document_indicator + 1
+	document_size_b := data[document_size_pos]
+	document_size := int(document_size_b)
+	document_end := document_size_pos + 1 + document_size - 2
+	document := DeserializeString(data[document_size_pos + 1:document_end])
+	println(document)
+
+	// String indicator
+	birthday_indicator := document_indicator + document_size
+	birthday_size_pos := birthday_indicator + 1
+	birthday_size_b := data[birthday_size_pos]
+	birthday_size := int(birthday_size_b)
+	birthday_end := birthday_size_pos + 1 + birthday_size - 2
+	birthday := DeserializeString(data[birthday_size_pos + 1:birthday_end])
+	println(birthday)
+
+	// Integer indicator
+	amount_indicator := birthday_indicator + birthday_size
+	amount_size_pos := amount_indicator + 1
+	amount_size_b := data[amount_size_pos]
+	amount_size := int(amount_size_b)
+	amount_end := amount_size_pos + 1 + amount_size - 2
+	println(amount_end)
+	println(amount_end)
+	amount := DeserializeUInteger64(data[amount_size_pos + 1:amount_end])
+	println(amount)
+
+	bet := &Bet {
+			name: name,
+			surname: surname,
+			document: document,
+			birthday: birthday,
+			amount: amount,
+	}
+
+	return bet
+}
+
 
 // I avoided bet for simplicity's sake and because the environment variables are
 // "guaranteed" to be passed.
@@ -163,14 +240,20 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-func (c *Client) sendToServer() error {
-	bet := c.bet.serialize(c.config.ID)
-	length := len(bet)
+func (c *Client) sendToServer(data []byte) error {
+	length := len(data)
 
+
+     println("Envio")
+     println(length)
 	var sent = 0
 	var err error
 	for offset := 0 ; offset < length ; offset += sent {
-		sent, err = c.conn.Write(bet[offset:])
+		println(offset)
+		println(sent)
+		sent, err = c.conn.Write(data[offset:])
+		println(offset)
+		println(sent)
 		if err != nil {
 			return err
 		}
@@ -178,6 +261,22 @@ func (c *Client) sendToServer() error {
 
 	return nil
 }
+
+func (c *Client) receiveMessage(size int) ([]byte, error) {
+	buffer := make([]byte, size)
+
+	var received = 0
+	var err error
+	for offset := 0 ; offset < size ; offset += received {
+		received, err = c.conn.Read(buffer[received:])
+		if err != nil {
+			break
+		}
+	}
+
+	return buffer, err
+}
+
 
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
@@ -191,13 +290,22 @@ func (c *Client) StartClientLoop() {
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 
-		// TODO: Modify the send to avoid short-write
-		c.sendToServer()
+		bet := c.bet.serialize(c.config.ID)
 
-		msg, err := bufio.NewReader(c.conn).ReadString('\n')
+		// TODO: Modify the send to avoid short-write
+		c.sendToServer(bet)
+
+		msg, err := c.receiveMessage(len(bet))
+
+		fmt.Printf("%v\n", msg)
+
+		received_bet := deserialize(msg)
+
+		// msg, err := bufio.NewReader(c.conn).ReadString('\n')
 		c.conn.Close()
 
 		if err != nil {
+			// TODO: Actualizar
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
 				c.config.ID,
 				err,
@@ -205,9 +313,9 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
-		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-			c.config.ID,
-			msg,
+		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
+			received_bet.document,
+			received_bet.amount,
 		)
 
 		// Wait a time between sending one message and the next one

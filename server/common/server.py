@@ -82,13 +82,17 @@ class Server:
             bet_bytes = self.__receive_bytes(size_i - 2)
             bet = self.__deserialize(bet_bytes)
             store_bets([bet])
-            print(bet)
+            dni = bet.document
+            number = bet.number
+            logging.info(f'action: apuesta_almacenada | result: success | dni: {dni} | numero: {number}')
 
-            msg = self._current_client.recv(1024).rstrip().decode('utf-8')
+
+            # msg = self._current_client.recv(1024).rstrip().decode('utf-8')
             addr = self._current_client.getpeername()
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
+            # logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
             # TODO: Modify the send to avoid short-writes
-            self._current_client.send("{}\n".format(msg).encode('utf-8'))
+            entire_message = initial_size + bet_bytes
+            self._current_client.send("{}\n".format(entire_message).encode('utf-8'))
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")
         finally:
