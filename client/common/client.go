@@ -43,14 +43,16 @@ const (
 // A byte indicating that it's a bet
 // Its length
 // All the rest of the elements serialized
-func (b *Bet) serialize() []byte {
+func (b *Bet) serialize(ID string) []byte {
+	id := SerializeString(ID)
 	name := SerializeString(b.name)
 	surname := SerializeString(b.surname)
 	document := SerializeString(b.document)
 	birthday := SerializeString(b.birthday)
 	amount := SerializeUInteger64(b.amount)
 
-	fields := append(name, surname...)
+	fields := append(id, name...)
+	fields = append(fields, surname...)
 	fields = append(fields, document...)
 	fields = append(fields, birthday...)
 	fields = append(fields, amount...)
@@ -162,7 +164,7 @@ func (c *Client) createClientSocket() error {
 }
 
 func (c *Client) sendToServer() error {
-	bet := c.bet.serialize()
+	bet := c.bet.serialize(c.config.ID)
 	length := len(bet)
 
 	var sent = 0

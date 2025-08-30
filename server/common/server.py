@@ -1,6 +1,6 @@
 import socket
 import logging
-from . utils import Bet
+from . utils import Bet, store_bets
 from . import protocol
 
 
@@ -81,6 +81,7 @@ class Server:
             # Now, we read all that data
             bet_bytes = self.__receive_bytes(size_i - 2)
             bet = self.__deserialize(bet_bytes)
+            store_bets([bet])
             print(bet)
 
             msg = self._current_client.recv(1024).rstrip().decode('utf-8')
@@ -110,14 +111,18 @@ class Server:
     def __deserialize(self, serialized_bet: bytes) -> Bet :
         rest = serialized_bet
 
+        agency_type = rest[0:1]
+        name_len = rest[1:2]
+        name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
+        agency = protocol.DeserializeString(rest[1:name_len_i])
+        rest = rest[name_len_i:]
+        print(agency)
+
         string_type = rest[0:1]
         name_len = rest[1:2]
         name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
         first_name = protocol.DeserializeString(rest[1:name_len_i])
-        print(name_len_i)
-        print(rest)
         rest = rest[name_len_i:]
-        print(rest)
         print(first_name)
 
         string_type = rest[0:1]
@@ -148,6 +153,5 @@ class Server:
         rest = rest[name_len_i:]
         print(amount)
 
-
-        # name_length = protocol.DeserializeUInteger64(name_len)
+        return Bet(agency, first_name, last_name, document, birthday, amount)
 
