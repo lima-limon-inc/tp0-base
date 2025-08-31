@@ -188,7 +188,10 @@ func InitBet() (*Bet, error) {
 // Client Entity that encapsulates how
 type Client struct {
 	config      ClientConfig
-	agencyFile  csv.Reader
+
+	agencyReader  csv.Reader
+	agencyFile    os.File
+
 	conn        net.Conn
 	killed      bool
 
@@ -203,6 +206,9 @@ func (c *Client) Close() {
      } else {
 	   log.Debug("action: close_socket | result: failure | client_id: %v", c.config.ID);
 	}
+
+	c.agencyFile.Close()
+
 	c.killed = true
 }
 
@@ -219,7 +225,8 @@ func NewClient(config ClientConfig) (*Client, error) {
 	client := &Client{
 		config: config,
 		killed: false,
-		agencyFile: *agency_reader,
+		agencyFile: *agency_file,
+		agencyReader: *agency_reader,
 	}
 	return client, nil
 }
@@ -280,7 +287,7 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error, bool) {
 
 	max_batches := c.config.MaxBetAmountInBatch;
 	for current_batch := 0 ; current_batch < max_batches && file_has_lines == true; current_batch += 1 {
-		record, err := c.agencyFile.Read()
+		record, err := c.agencyReader.Read()
 		if err != nil {
 			if err == io.EOF {
 				file_has_lines = false
