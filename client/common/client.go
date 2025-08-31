@@ -273,7 +273,7 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error, bool) {
 	}
 
 	max_batches := c.config.MaxBetAmountInBatch;
-	for current_batch := 1 ; current_batch < max_batches && file_has_lines == true; current_batch += 1 {
+	for current_batch := 0 ; current_batch < max_batches && file_has_lines == true; current_batch += 1 {
 		record, err := c.agencyFile.Read()
 		name          := record[0]
 		surname       := record[1]
