@@ -381,8 +381,9 @@ func (c *Client) StartClientLoop() {
 		println("Batche enviadas")
 
 
-		// Now we receive a single byte represent the exit stauts on the server side
+		// Now we receive two bytes representing 'ok'
 		msg, err := c.receiveMessage(1)
+		fmt.Printf("%#v", msg)
 		println("Mensaje recibido")
 		if err != nil {
 			// TODO: Actualizar
@@ -393,7 +394,9 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
+		println(msg)
 		exit_status := int8(msg[0])
+		println(exit_status)
 		if exit_status != 0 {
 			log.Errorf("action: apuestas_enviadas | result: fail | dni: %v | server_exit_status: %v",
 				c.config.ID,

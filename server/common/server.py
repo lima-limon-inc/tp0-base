@@ -93,16 +93,15 @@ class Server:
             bets = self.__deserialize_batches(bets_batch_bytes)
             print(bets)
             store_bets(bets)
-            logging.info(f'action: apuesta_almacenada | result: success | dni: {dni} | numero: {number}')
+            logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
 
 
             # msg = self._current_client.recv(1024).rstrip().decode('utf-8')
-            addr = self._current_client.getpeername()
-            # logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            # TODO: Modify the send to avoid short-writes
-            entire_message = initial_size + bet_bytes
-            # self._current_client.send("{}\n".format(entire_message).encode('utf-8'))
-            self.__send_bytes(entire_message)
+            self._current_client.getpeername()
+            ok = bytes(1)
+            print(len(ok))
+            print(ok)
+            self.__send_bytes(ok)
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")
         finally:
