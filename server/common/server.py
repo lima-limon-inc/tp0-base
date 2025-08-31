@@ -83,7 +83,7 @@ class Server:
                 initial_type = self.__receive_bytes(1)
                 initial_indicator = protocol.DeserializeUInteger8(initial_type)
                 if initial_indicator == 2:
-                    logging.info(f'action: apuesta_finalizadas | result: success |')
+                    logging.info(f'action: apuesta_finalizadas | result: success | status: finished ')
                     break
 
                 # # 1 byte longitud

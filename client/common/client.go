@@ -410,7 +410,7 @@ func (c *Client) StartClientLoop() {
 		log.Infof("action: apuestas_enviadas | result: success")
 
 		// Wait a time between sending one message and the next one
-		time.Sleep(c.config.LoopPeriod)
+		// time.Sleep(c.config.LoopPeriod)
 
 	}
 	// msg, err := bufio.NewReader(c.conn).ReadString('\n')
