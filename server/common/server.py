@@ -88,15 +88,20 @@ class Server:
 
             # Now, we read all that data
             bets_batch_bytes = self.__receive_bytes(size)
-            bets = self.__deserialize_batches(bets_batch_bytes)
-            store_bets(bets)
-            logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
+            try:
+                bets = self.__deserialize_batches(bets_batch_bytes)
+                store_bets(bets)
+                logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
+                ok = bytes(1)
+                self.__send_bytes(ok)
+            except:
+                logging.info(f'action: apuesta_recibida | result: fail | cantidad: 4')
+                ok = bytes(2)
+                self.__send_bytes(ok)
 
 
             # msg = self._current_client.recv(1024).rstrip().decode('utf-8')
-            self._current_client.getpeername()
-            ok = bytes(1)
-            self.__send_bytes(ok)
+            # self._current_client.getpeername()
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")
         finally:
