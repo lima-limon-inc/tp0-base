@@ -5,22 +5,34 @@ from . import protocol
 
 
 class Server:
-    def __init__(self, port, listen_backlog):
+    def __init__(self, port, listen_backlog, expected_clients: int):
         # Initialize server socket
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
 
-        self._current_client: socket.socket = None
+        self._expected_clients = expected_clients
+
+        self._current_clients: list[socket.socket] = []
+        self._current_client = 0
 
         self._killed = False
 
     def finalize(self):
         self._server_socket.close()
-        if self._current_client != None:
-            self._current_client.close()
+        for client in self._current_clients:
+            client.close()
         self._killed = True
+
+    def _receive_clients(self):
+        while self._current_client < self._expected_clients:
+            self.__accept_new_connection()
+            self.__handle_client_connection()
+            self._current_client += 1
+
+    def _handle_lottery(self):
+        abort()
 
     def run(self):
         """
@@ -37,31 +49,31 @@ class Server:
         # With that in mind, we must catch any potential OSError in here as well
         while not self._killed:
             try:
-                self._current_client = self.__accept_new_connection()
-                self.__handle_client_connection()
+                self._receive_clients()
+                self._handle_lottery()
             except OSError as e:
                 # If we catch an error, then most probably we received a signal that closed our sockets
                 break
 
     # Size: Amount of bytes to read
-    def __receive_bytes(self, size) -> bytes:
+    def __receive_bytes(self, size, client_index) -> bytes:
         buff: bytes  = b''
         remaining_size = size
         while remaining_size > 0:
             # Received bytes
-            received = self._current_client.recv(size)
+            received = self._current_clients[client_index].recv(size)
             buff = buff + received
             remaining_size -= len(received)
 
         return buff
 
     # Size: Amount of bytes to read
-    def __send_bytes(self, data):
+    def __send_bytes(self, data, client_index):
         size = len(data)
         remaining_size = size
         while remaining_size > 0:
             # Received bytes
-            sent_data = self._current_client.send(data)
+            sent_data = self._current_clients[client_index].send(data)
             remaining_size -= sent_data
 
 
@@ -80,7 +92,7 @@ class Server:
                 # Primer byte indicador de apuestas
                 # Siguiente es un integer empaquetado:
                 # # 1 byte indicador
-                initial_type = self.__receive_bytes(1)
+                initial_type = self.__receive_bytes(1, self._current_client)
                 initial_indicator = protocol.DeserializeUInteger8(initial_type)
                 if initial_indicator == 2:
                     logging.info(f'action: apuesta_finalizadas | result: success | status: finished ')
@@ -89,30 +101,26 @@ class Server:
                 # # 1 byte longitud
                 # # 8 bytes datos
                 # 1 + 1 + 1 + 8 = 11
-                initial_size = self.__receive_bytes(10)
+                initial_size = self.__receive_bytes(10, self._current_client)
 
                 size = protocol.DeserializeUInteger64(initial_size[3:11])
 
                 # Now, we read all that data
-                bets_batch_bytes = self.__receive_bytes(size)
+                bets_batch_bytes = self.__receive_bytes(size, self._current_client)
                 try:
                     bets = self.__deserialize_batches(bets_batch_bytes)
                     store_bets(bets)
                     logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
                     ok = bytes(1)
-                    self.__send_bytes(ok)
+                    self.__send_bytes(ok, self._current_client)
                 except:
-                    logging.info(f'action: apuesta_recibida | result: fail | cantidad: 4')
+                    logging.info(f'action: apuesta_recibida | result: fail')
                     ok = bytes(2)
-                    self.__send_bytes(ok)
+                    self.__send_bytes(ok, self._current_client)
 
-
-                # msg = self._current_client.recv(1024).rstrip().decode('utf-8')
-                # self._current_client.getpeername()
             except OSError as e:
                 logging.error("action: receive_message | result: fail | error: {e}")
 
-        self._current_client.close()
 
     def __accept_new_connection(self):
         """
@@ -126,7 +134,10 @@ class Server:
         logging.info('action: accept_connections | result: in_progress')
         c, addr = self._server_socket.accept()
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
-        return c
+
+        self._current_clients.append(c)
+
+        return
 
     # Bet
     # Size

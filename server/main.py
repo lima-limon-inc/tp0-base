@@ -27,6 +27,7 @@ def initialize_config():
         config_params["port"] = int(os.getenv('SERVER_PORT', config["DEFAULT"]["SERVER_PORT"]))
         config_params["listen_backlog"] = int(os.getenv('SERVER_LISTEN_BACKLOG', config["DEFAULT"]["SERVER_LISTEN_BACKLOG"]))
         config_params["logging_level"] = os.getenv('LOGGING_LEVEL', config["DEFAULT"]["LOGGING_LEVEL"])
+        config_params["amount_of_clients"] = os.getenv('AMOUNT_OF_CLIENTS ', config["DEFAULT"]["AMOUNT_OF_CLIENTS"])
     except KeyError as e:
         raise KeyError("Key was not found. Error: {} .Aborting server".format(e))
     except ValueError as e:
@@ -40,6 +41,7 @@ def main():
     logging_level = config_params["logging_level"]
     port = config_params["port"]
     listen_backlog = config_params["listen_backlog"]
+    amount_of_clients = config_params["amount_of_clients"]
 
     initialize_log(logging_level)
 
@@ -49,14 +51,14 @@ def main():
                   f"listen_backlog: {listen_backlog} | logging_level: {logging_level}")
 
     # Initialize server and start server loop
-    server = Server(port, listen_backlog)
+    server = Server(port, listen_backlog, int(amount_of_clients))
 
     # Defino este closure para frenar al server
     def signal_handler(sig, frame):
         server.finalize()
 
     signal.signal(signal.SIGTERM, signal_handler)
-        
+
     server.run()
 
 def initialize_log(logging_level):
