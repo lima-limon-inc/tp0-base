@@ -1,8 +1,7 @@
 package common
 
 import (
-	// "io"
-	// "fmt"
+	"io"
 
 	// "bufio"
 	"net"
@@ -260,11 +259,12 @@ func (c *Client) sendToServer(data []byte) error {
 // The amount of bets will depend on the following equation:
 // min(max_amount, 8kb of data)
 // Initial bet is used when a bet was succesfully serialized, but was unable to fit in the previous batch
-func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error) {
+func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error, bool) {
 	buffer := make([]byte, MAX_BATCH_SIZE)
 
 	var offset = 0
 	var left_out_bet *Bet = nil
+	var file_has_lines = true;
 
 	if initial_bet != nil {
 		serialized_bet := initial_bet.serialize(c.config.ID)
@@ -273,7 +273,7 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error) {
 	}
 
 	max_batches := c.config.MaxBetAmountInBatch;
-	for current_batch := 1 ; current_batch < max_batches; current_batch += 1 {
+	for current_batch := 1 ; current_batch < max_batches && file_has_lines == true; current_batch += 1 {
 		record, err := c.agencyFile.Read()
 		name          := record[0]
 		surname       := record[1]
@@ -282,7 +282,11 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error) {
 		amount, err   := strconv.ParseUint(record[4], 10, 64)
 
 		if err != err {
-			return nil, nil, err
+			if err == io.EOF {
+				file_has_lines = false
+			} else {
+				return nil, nil, err, true
+			}
 		}
 
 		bet := &Bet {
@@ -311,7 +315,7 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error) {
 	batch := buffer[0:offset]
 	packaged_batch := c.packageBets(batch)
 
-	return packaged_batch, left_out_bet, nil
+	return packaged_batch, left_out_bet, nil, file_has_lines
 }
 
 /// 1 byte de indicador
@@ -349,7 +353,8 @@ func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
 	var initial_bet *Bet = nil
-	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+	var file_has_lines = true
+	for ; file_has_lines == true; {
 		// If the client is killed, break out of the loop inmediately
 		if c.killed {
 			break
@@ -357,8 +362,10 @@ func (c *Client) StartClientLoop() {
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 
-		bets, left_out_bet, err := c.createBatch(initial_bet)
+		bets, left_out_bet, err, still_has_lines := c.createBatch(initial_bet)
+		file_has_lines = still_has_lines
 		initial_bet = left_out_bet
+
 
 		// TODO: Modify the send to avoid short-write
 		c.sendToServer(bets)
