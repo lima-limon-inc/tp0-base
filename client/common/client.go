@@ -359,6 +359,7 @@ func (c *Client) StartClientLoop() {
 		if c.killed {
 			break
 		}
+		// TODO: No hacer que se reconecte en cada iteracion
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
 
@@ -367,7 +368,6 @@ func (c *Client) StartClientLoop() {
 		initial_bet = left_out_bet
 
 
-		// TODO: Modify the send to avoid short-write
 		c.sendToServer(bets)
 
 
