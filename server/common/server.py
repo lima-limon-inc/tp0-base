@@ -82,7 +82,6 @@ class Server:
                 # # 1 byte indicador
                 initial_type = self.__receive_bytes(1)
                 initial_indicator = protocol.DeserializeUInteger8(initial_type)
-                print(initial_type)
                 if initial_indicator == 2:
                     break
 
