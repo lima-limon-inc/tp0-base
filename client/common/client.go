@@ -275,19 +275,20 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error, bool) {
 	max_batches := c.config.MaxBetAmountInBatch;
 	for current_batch := 0 ; current_batch < max_batches && file_has_lines == true; current_batch += 1 {
 		record, err := c.agencyFile.Read()
+		if err != nil {
+			if err == io.EOF {
+				file_has_lines = false
+				break;
+			} else {
+				return nil, nil, err, true
+			}
+		}
+
 		name          := record[0]
 		surname       := record[1]
 		document      := record[2]
 		birthday      := record[3]
 		amount, err   := strconv.ParseUint(record[4], 10, 64)
-
-		if err != err {
-			if err == io.EOF {
-				file_has_lines = false
-			} else {
-				return nil, nil, err, true
-			}
-		}
 
 		bet := &Bet {
 			name: name,
