@@ -11,3 +11,7 @@ def DeserializeUInteger64(bytes_integer: bytes) -> int:
 
     return inner_int
 
+def DeserializeUInteger8(bytes_integer: bytes) -> int:
+    inner_int = int.from_bytes(bytes_integer, byteorder='big', signed=True)
+
+    return inner_int

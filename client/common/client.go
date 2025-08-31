@@ -46,6 +46,7 @@ type ClientValues uint8
 const (
 	ClientBet ClientValues = 0
 	ClientBetBatch ClientValues = 1
+	ClientBetEnd ClientValues = 2
 )
 
 // A Bet is serialized as the following:
@@ -255,6 +256,11 @@ func (c *Client) sendToServer(data []byte) error {
 	return nil
 }
 
+func (c *Client) endCommunication() {
+	end_indicator := [1]byte { byte(uint8(ClientBetEnd)) };
+	c.sendToServer(end_indicator[:])
+}
+
 // Will send a batch of complete bets to the server
 // The amount of bets will depend on the following equation:
 // min(max_amount, 8kb of data)
@@ -322,7 +328,7 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error, bool) {
 /// 1 byte de indicador
 /// 8 bytes de longitud
 func (c *Client) packageBets(bets []byte) []byte {
-	bets_batch_indicator := [1]byte {byte(ClientBetBatch)}
+	bets_batch_indicator := [1]byte {byte(uint8(ClientBetBatch))}
 	bets_length := uint64(len(bets))
 	bets_length_b := SerializeUInteger64(bets_length)
 
@@ -355,14 +361,14 @@ func (c *Client) StartClientLoop() {
 	// Messages if the message amount threshold has not been surpassed
 	var initial_bet *Bet = nil
 	var file_has_lines = true
+	// TODO: No hacer que se reconecte en cada iteracion
+	// Create the connection the server in every loop iteration. Send an
+	c.createClientSocket()
 	for ; file_has_lines == true; {
 		// If the client is killed, break out of the loop inmediately
 		if c.killed {
 			break
 		}
-		// TODO: No hacer que se reconecte en cada iteracion
-		// Create the connection the server in every loop iteration. Send an
-		c.createClientSocket()
 
 		bets, left_out_bet, err, still_has_lines := c.createBatch(initial_bet)
 		file_has_lines = still_has_lines
@@ -392,8 +398,6 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
-		// msg, err := bufio.NewReader(c.conn).ReadString('\n')
-		c.conn.Close()
 
 
 		log.Infof("action: apuestas_enviadas | result: success")
@@ -402,5 +406,8 @@ func (c *Client) StartClientLoop() {
 		time.Sleep(c.config.LoopPeriod)
 
 	}
+	// msg, err := bufio.NewReader(c.conn).ReadString('\n')
+	c.endCommunication()
+	c.conn.Close()
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }

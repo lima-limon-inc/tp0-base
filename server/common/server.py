@@ -72,40 +72,47 @@ class Server:
         If a problem arises in the communication with the client, the
         client socket will also be closed
         """
-        try:
-            # TODO: Modify the receive to avoid short-reads
-
-            # We start of reading two bytes to check how much we should read
-            # Primer byte indicador de apuestas
-            # Siguiente es un integer empaquetado:
-            # # 1 byte indicador
-            # # 1 byte longitud
-            # # 8 bytes datos
-            # 1 + 1 + 1 + 8 = 11
-            initial_size = self.__receive_bytes(11)
-
-            size = protocol.DeserializeUInteger64(initial_size[3:11])
-
-            # Now, we read all that data
-            bets_batch_bytes = self.__receive_bytes(size)
+        while True:
             try:
-                bets = self.__deserialize_batches(bets_batch_bytes)
-                store_bets(bets)
-                logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
-                ok = bytes(1)
-                self.__send_bytes(ok)
-            except:
-                logging.info(f'action: apuesta_recibida | result: fail | cantidad: 4')
-                ok = bytes(2)
-                self.__send_bytes(ok)
+                # TODO: Modify the receive to avoid short-reads
+
+                # We start of reading two bytes to check how much we should read
+                # Primer byte indicador de apuestas
+                # Siguiente es un integer empaquetado:
+                # # 1 byte indicador
+                initial_type = self.__receive_bytes(1)
+                initial_indicator = protocol.DeserializeUInteger8(initial_type)
+                print(initial_type)
+                if initial_indicator == 2:
+                    break
+
+                # # 1 byte longitud
+                # # 8 bytes datos
+                # 1 + 1 + 1 + 8 = 11
+                initial_size = self.__receive_bytes(10)
+
+                size = protocol.DeserializeUInteger64(initial_size[3:11])
+
+                # Now, we read all that data
+                bets_batch_bytes = self.__receive_bytes(size)
+                try:
+                    bets = self.__deserialize_batches(bets_batch_bytes)
+                    store_bets(bets)
+                    logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
+                    ok = bytes(1)
+                    self.__send_bytes(ok)
+                except:
+                    logging.info(f'action: apuesta_recibida | result: fail | cantidad: 4')
+                    ok = bytes(2)
+                    self.__send_bytes(ok)
 
 
-            # msg = self._current_client.recv(1024).rstrip().decode('utf-8')
-            # self._current_client.getpeername()
-        except OSError as e:
-            logging.error("action: receive_message | result: fail | error: {e}")
-        finally:
-            self._current_client.close()
+                # msg = self._current_client.recv(1024).rstrip().decode('utf-8')
+                # self._current_client.getpeername()
+            except OSError as e:
+                logging.error("action: receive_message | result: fail | error: {e}")
+
+        self._current_client.close()
 
     def __accept_new_connection(self):
         """
