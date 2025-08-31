@@ -286,6 +286,7 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error, bool) {
 	}
 
 	max_batches := c.config.MaxBetAmountInBatch;
+	println(max_batches)
 	for current_batch := 0 ; current_batch < max_batches && file_has_lines == true; current_batch += 1 {
 		record, err := c.agencyReader.Read()
 		if err != nil {
