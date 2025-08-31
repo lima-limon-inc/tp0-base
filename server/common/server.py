@@ -83,31 +83,16 @@ class Server:
             # # 8 bytes datos
             # 1 + 1 + 1 + 8 = 11
             initial_size = self.__receive_bytes(11)
-            print(initial_size)
 
-            # 0 Tipo
-            # 1
-            # 2
-            # 3
-            # 4
-            # 5
-            # 6
-            # 7
-            # 8
-            # 9
-            print(initial_size[1:11])
             size = protocol.DeserializeUInteger64(initial_size[3:11])
             print(size)
 
             # Now, we read all that data
             bets_batch_bytes = self.__receive_bytes(size)
             print(bets_batch_bytes)
-            print(len(bets_batch_bytes))
             bets = self.__deserialize_batches(bets_batch_bytes)
             print(bets)
             store_bets(bets)
-            dni = bets.document
-            number = bets.number
             logging.info(f'action: apuesta_almacenada | result: success | dni: {dni} | numero: {number}')
 
 
@@ -141,23 +126,35 @@ class Server:
     # Size
     # Datos
     def __deserialize_batches(self, bet_batches: bytes) -> list[Bet]:
-        print(bet_batches)
         bets = []
         batch_len = len(bet_batches)
         current_byte = 0
 
         while current_byte < batch_len:
-            bet_indicator = bet_batches[0:1]
-            size_b = bet_batches[1:2]
+            bet_indicator = bet_batches[current_byte:current_byte + 1]
+
+            size_b = bet_batches[current_byte + 1:current_byte + 2]
             size_i = int.from_bytes(size_b, byteorder='big', signed=True) # 1
-            current_bet = self.__deserialize_bet(bet_batches[current_byte:current_byte + size_i])
+            print("Len del current bet")
+            print(size_i)
+
+            current_bet = self.__deserialize_bet(bet_batches[current_byte:current_byte + size_i + 2])
             bets.append(current_bet)
             current_byte += size_i + 2
 
         return bets
 
     def __deserialize_bet(self, serialized_bet: bytes) -> Bet :
+        print("Deserialize")
         rest = serialized_bet
+        print(serialized_bet)
+        print(len(serialized_bet))
+
+        bet_indicator = rest[0:1]
+        bet_size_b = rest[1:2]
+        bet_size = int.from_bytes(bet_size_b, byteorder='big', signed=True) # 1
+        print(bet_size)
+        rest = rest[2:]
 
         string_type = rest[0:1] # 0
         name_len = rest[1:2]    # 1
@@ -169,30 +166,43 @@ class Server:
         name_len = rest[1:2]
         name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
         first_name = protocol.DeserializeString(rest[2: 2 + name_len_i ])
+        print("first_name")
+        print(first_name)
         rest = rest[name_len_i + 2:]
 
         string_type = rest[0:1]
         name_len = rest[1:2]
         name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
         last_name = protocol.DeserializeString(rest[2: 2 + name_len_i ])
+        print("last_name")
+        print(last_name)
         rest = rest[name_len_i + 2:]
 
         string_type = rest[0:1]
         name_len = rest[1:2]
         name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
         document = protocol.DeserializeString(rest[2: 2 + name_len_i ])
+        print("document")
+        print(document)
         rest = rest[name_len_i + 2:]
 
         string_type = rest[0:1]
         name_len = rest[1:2]
         name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
         birthday = protocol.DeserializeString(rest[2: 2 + name_len_i ])
+        print("birthday")
+        print(birthday)
         rest = rest[name_len_i + 2:]
 
+        print(rest)
+        print("amount")
         integer_type = rest[0:1]
         name_len = rest[1:2]
         name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
+        print(name_len_i)
         amount = protocol.DeserializeUInteger64(rest[2: 2 + name_len_i ])
+        print("amount")
+        print(amount)
         rest = rest[name_len_i + 2:]
 
         return Bet(agency, first_name, last_name, document, birthday, amount)

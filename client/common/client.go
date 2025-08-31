@@ -1,7 +1,7 @@
 package common
 
 import (
-	// "fmt"
+	"fmt"
 
 	// "bufio"
 	"net"
@@ -45,6 +45,7 @@ type ClientValues uint8
 // Using the Client* prefix to avoid collissions
 const (
 	ClientBet ClientValues = 0
+	ClientBetBatch ClientValues = 1
 )
 
 // A Bet is serialized as the following:
@@ -72,10 +73,13 @@ func (b *Bet) serialize(ID string) []byte {
 
 	buffer[0] = byte(ClientBet)
 	buffer[1] = byte(length)
+	println("L")
+	println(length)
 	for i := 0; i < length; i++ {
 		current_byte := fields[i]
 		buffer[i + 2] = current_byte
 	}
+	fmt.Printf("%#v", buffer)
 
 	return buffer
 }
@@ -279,6 +283,7 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error) {
 		document      := record[2]
 		birthday      := record[3]
 		amount, err   := strconv.ParseUint(record[4], 10, 64)
+
 		if err != err {
 			return nil, nil, err
 		}
@@ -292,7 +297,10 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error) {
 		}
 
 		serialized_bet := bet.serialize(c.config.ID)
+		println(len(serialized_bet))
+		// fmt.Printf("%#v", serialized_bet)
 		if offset + len(serialized_bet) > MAX_BATCH_SIZE {
+			println("Me paso del limite")
 			// Cotemplates the case where a bet does not fit inside the current batch
 			left_out_bet = bet
 			break
@@ -306,7 +314,29 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error) {
 
 	}
 
-	return buffer[0:offset], left_out_bet, nil
+	println("Done with batch")
+
+	batch := buffer[0:offset]
+	packaged_batch := c.packageBets(batch)
+
+	return packaged_batch, left_out_bet, nil
+}
+
+/// 1 byte de indicador
+/// 8 bytes de longitud
+func (c *Client) packageBets(bets []byte) []byte {
+	bets_batch_indicator := [1]byte {byte(ClientBetBatch)}
+	bets_length := uint64(len(bets))
+	bets_length_b := SerializeUInteger64(bets_length)
+
+	fmt.Printf("Bets length")
+	println(bets_length)
+
+	bets_header := append(bets_batch_indicator[:], bets_length_b...)
+
+	full_package := append(bets_header[:], bets...)
+
+	return full_package
 }
 
 func (c *Client) receiveMessage(size int) ([]byte, error) {
@@ -331,21 +361,29 @@ func (c *Client) StartClientLoop() {
 	// Messages if the message amount threshold has not been surpassed
 	var initial_bet *Bet = nil
 	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
+		println("Yello")
 		// If the client is killed, break out of the loop inmediately
 		if c.killed {
 			break
 		}
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
+		println("CLiente creado")
 
 		bets, left_out_bet, err := c.createBatch(initial_bet)
 		initial_bet = left_out_bet
+		println("Batche creado")
 
 		// TODO: Modify the send to avoid short-write
+		println(bets)
+		println(len(bets))
 		c.sendToServer(bets)
+		println("Batche enviadas")
+
 
 		// Now we receive a single byte represent the exit stauts on the server side
 		msg, err := c.receiveMessage(1)
+		println("Mensaje recibido")
 		if err != nil {
 			// TODO: Actualizar
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
