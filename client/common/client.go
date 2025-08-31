@@ -1,7 +1,6 @@
 package common
 
 import (
-	"fmt"
 	"io"
 
 	// "bufio"
@@ -74,13 +73,10 @@ func (b *Bet) serialize(ID string) []byte {
 
 	buffer[0] = byte(ClientBet)
 	buffer[1] = byte(length)
-	println("L")
-	println(length)
 	for i := 0; i < length; i++ {
 		current_byte := fields[i]
 		buffer[i + 2] = current_byte
 	}
-	fmt.Printf("%#v", buffer)
 
 	return buffer
 }
@@ -213,7 +209,6 @@ func (c *Client) Close() {
 // as a parameter
 func NewClient(config ClientConfig) (*Client, error) {
 	data_path := ".data/dataset/agency-" + config.ID + ".csv"
-	println(data_path)
 	agency_file, err := os.Open(data_path)
 	if err != nil {
 		return nil, err
@@ -303,10 +298,7 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error, bool) {
 		}
 
 		serialized_bet := bet.serialize(c.config.ID)
-		println(len(serialized_bet))
-		// fmt.Printf("%#v", serialized_bet)
 		if offset + len(serialized_bet) > MAX_BATCH_SIZE {
-			println("Me paso del limite")
 			// Cotemplates the case where a bet does not fit inside the current batch
 			left_out_bet = bet
 			break
@@ -320,8 +312,6 @@ func (c *Client) createBatch(initial_bet *Bet) ([]byte, *Bet, error, bool) {
 
 	}
 
-	println("Done with batch")
-
 	batch := buffer[0:offset]
 	packaged_batch := c.packageBets(batch)
 
@@ -334,9 +324,6 @@ func (c *Client) packageBets(bets []byte) []byte {
 	bets_batch_indicator := [1]byte {byte(ClientBetBatch)}
 	bets_length := uint64(len(bets))
 	bets_length_b := SerializeUInteger64(bets_length)
-
-	fmt.Printf("Bets length")
-	println(bets_length)
 
 	bets_header := append(bets_batch_indicator[:], bets_length_b...)
 
@@ -368,32 +355,24 @@ func (c *Client) StartClientLoop() {
 	var initial_bet *Bet = nil
 	var file_has_lines = true
 	for ; file_has_lines == true; {
-		println("Yello")
 		// If the client is killed, break out of the loop inmediately
 		if c.killed {
 			break
 		}
 		// Create the connection the server in every loop iteration. Send an
 		c.createClientSocket()
-		println("CLiente creado")
 
 		bets, left_out_bet, err, still_has_lines := c.createBatch(initial_bet)
 		file_has_lines = still_has_lines
 		initial_bet = left_out_bet
 
-		println("Batche creado")
 
 		// TODO: Modify the send to avoid short-write
-		println(bets)
-		println(len(bets))
 		c.sendToServer(bets)
-		println("Batche enviadas")
 
 
 		// Now we receive two bytes representing 'ok'
 		msg, err := c.receiveMessage(1)
-		fmt.Printf("%#v", msg)
-		println("Mensaje recibido")
 		if err != nil {
 			// TODO: Actualizar
 			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
@@ -403,9 +382,7 @@ func (c *Client) StartClientLoop() {
 			return
 		}
 
-		println(msg)
 		exit_status := int8(msg[0])
-		println(exit_status)
 		if exit_status != 0 {
 			log.Errorf("action: apuestas_enviadas | result: fail | dni: %v | server_exit_status: %v",
 				c.config.ID,
