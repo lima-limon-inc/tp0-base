@@ -50,7 +50,7 @@ func InitConfig() (*viper.Viper, error) {
 	// NOTE: This file is no longer copied directly from the Dockerfile, it is
 	// instead taken from a docker volume. However, it should still be
 	// accessible.
-	v.SetConfigFile("./client/config.yaml")
+	v.SetConfigFile("/config.yaml")
 	if err := v.ReadInConfig(); err != nil {
 		fmt.Printf("Configuration could not be read from config file. Using env variables instead")
 	}
