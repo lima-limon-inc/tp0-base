@@ -76,17 +76,38 @@ class Server:
             # TODO: Modify the receive to avoid short-reads
 
             # We start of reading two bytes to check how much we should read
-            initial_size = self.__receive_bytes(2)
+            # Primer byte indicador de apuestas
+            # Siguiente es un integer empaquetado:
+            # # 1 byte indicador
+            # # 1 byte longitud
+            # # 8 bytes datos
+            # 1 + 1 + 1 + 8 = 11
+            initial_size = self.__receive_bytes(11)
+            print(initial_size)
 
-            size = initial_size[1:2]
-            size_i = int.from_bytes(size, byteorder='big', signed=True)
+            # 0 Tipo
+            # 1
+            # 2
+            # 3
+            # 4
+            # 5
+            # 6
+            # 7
+            # 8
+            # 9
+            print(initial_size[1:11])
+            size = protocol.DeserializeUInteger64(initial_size[3:11])
+            print(size)
 
             # Now, we read all that data
-            bet_bytes = self.__receive_bytes(size_i)
-            bet = self.__deserialize(bet_bytes)
-            store_bets([bet])
-            dni = bet.document
-            number = bet.number
+            bets_batch_bytes = self.__receive_bytes(size)
+            print(bets_batch_bytes)
+            print(len(bets_batch_bytes))
+            bets = self.__deserialize_batches(bets_batch_bytes)
+            print(bets)
+            store_bets(bets)
+            dni = bets.document
+            number = bets.number
             logging.info(f'action: apuesta_almacenada | result: success | dni: {dni} | numero: {number}')
 
 
@@ -116,7 +137,26 @@ class Server:
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
         return c
 
-    def __deserialize(self, serialized_bet: bytes) -> Bet :
+    # Bet
+    # Size
+    # Datos
+    def __deserialize_batches(self, bet_batches: bytes) -> list[Bet]:
+        print(bet_batches)
+        bets = []
+        batch_len = len(bet_batches)
+        current_byte = 0
+
+        while current_byte < batch_len:
+            bet_indicator = bet_batches[0:1]
+            size_b = bet_batches[1:2]
+            size_i = int.from_bytes(size_b, byteorder='big', signed=True) # 1
+            current_bet = self.__deserialize_bet(bet_batches[current_byte:current_byte + size_i])
+            bets.append(current_bet)
+            current_byte += size_i + 2
+
+        return bets
+
+    def __deserialize_bet(self, serialized_bet: bytes) -> Bet :
         rest = serialized_bet
 
         string_type = rest[0:1] # 0
