@@ -82,69 +82,89 @@ func (b *Bet) serialize(ID string) []byte {
 	return buffer
 }
 
-// func deserialize(data []byte) *Confirmation {
-// 	// Bet indicator [2]
-// 	// total_size := data[1]
+func deserialize_bets(bets_b []byte, length int) []*Bet {
+	var bets []*Bet;
+	offset := 0
 
-// 	// String indicator
-// 	string_identifier := 2
-// 	id_size_pos := string_identifier + 1
-// 	id_size_b := data[id_size_pos]
-// 	id_size := int(id_size_b)
-// 	// id_end := id_size_pos + 1 + id_size - 2
-// 	// id := DeserializeString(data[id_size_pos + 1:id_end])
+	for ; offset < length ; {
+		bet_indicator := bets_b[offset]
+		if bet_indicator != byte(ClientBet) {
+			panic("Tried to deserialize as bet something that isnt a bet")
+		}
+		bet_size_b := bets_b[offset + 1]
+		bet_size := int(uint8(bet_size_b))
 
-// 	// String indicator
-// 	name_indicator_pos := string_identifier + id_size + 2
-// 	name_size_pos := name_indicator_pos + 1
-// 	name_size_b := data[name_size_pos]
-// 	name_size := int(name_size_b)
-// 	name_end := name_size_pos + 1 + name_size
-// 	name := DeserializeString(data[name_size_pos + 1:name_end])
+		bet := deserialize(bets_b[offset:offset + bet_size])
 
-// 	// String indicator
-// 	surname_indicator := name_indicator_pos + name_size + 2
-// 	surname_size_pos := surname_indicator + 1
-// 	surname_size_b := data[surname_size_pos]
-// 	surname_size := int(surname_size_b)
-// 	surname_end := surname_size_pos + 1 + surname_size
-// 	surname := DeserializeString(data[surname_size_pos + 1:surname_end])
+		bets = append(bets, bet)
 
-// 	// String indicator
-// 	document_indicator := surname_indicator + surname_size + 2
-// 	document_size_pos := document_indicator + 1
-// 	document_size_b := data[document_size_pos]
-// 	document_size := int(document_size_b)
-// 	document_end := document_size_pos + 1 + document_size
-// 	document := DeserializeString(data[document_size_pos + 1:document_end])
+		offset += bet_size + 2
+	}
 
-// 	// String indicator
-// 	birthday_indicator := document_indicator + document_size + 2
-// 	birthday_size_pos := birthday_indicator + 1
-// 	birthday_size_b := data[birthday_size_pos]
-// 	birthday_size := int(birthday_size_b)
-// 	birthday_end := birthday_size_pos + 1 + birthday_size
-// 	birthday := DeserializeString(data[birthday_size_pos + 1:birthday_end])
+	return bets
+}
 
-// 	// Integer indicator
-// 	amount_indicator := birthday_indicator + birthday_size + 2
-// 	amount_size_pos := amount_indicator + 1
-// 	amount_size_b := data[amount_size_pos]
-// 	amount_size := int(amount_size_b)
-// 	amount_pos := amount_size_pos + 1
-// 	amount_end := amount_pos + amount_size
-// 	amount := DeserializeUInteger64(data[amount_pos:amount_end])
+func deserialize(data []byte) *Bet {
 
-// 	bet := &Bet {
-// 			name: name,
-// 			surname: surname,
-// 			document: document,
-// 			birthday: birthday,
-// 			amount: amount,
-// 	}
+	// String indicator
+	string_identifier := 2
+	id_size_pos := string_identifier + 1
+	id_size_b := data[id_size_pos]
+	id_size := int(id_size_b)
+	// id_end := id_size_pos + 1 + id_size - 2
+	// id := DeserializeString(data[id_size_pos + 1:id_end])
 
-// 	return bet
-// }
+	// String indicator
+	name_indicator_pos := string_identifier + id_size + 2
+	name_size_pos := name_indicator_pos + 1
+	name_size_b := data[name_size_pos]
+	name_size := int(name_size_b)
+	name_end := name_size_pos + 1 + name_size
+	name := DeserializeString(data[name_size_pos + 1:name_end])
+
+	// String indicator
+	surname_indicator := name_indicator_pos + name_size + 2
+	surname_size_pos := surname_indicator + 1
+	surname_size_b := data[surname_size_pos]
+	surname_size := int(surname_size_b)
+	surname_end := surname_size_pos + 1 + surname_size
+	surname := DeserializeString(data[surname_size_pos + 1:surname_end])
+
+	// String indicator
+	document_indicator := surname_indicator + surname_size + 2
+	document_size_pos := document_indicator + 1
+	document_size_b := data[document_size_pos]
+	document_size := int(document_size_b)
+	document_end := document_size_pos + 1 + document_size
+	document := DeserializeString(data[document_size_pos + 1:document_end])
+
+	// String indicator
+	birthday_indicator := document_indicator + document_size + 2
+	birthday_size_pos := birthday_indicator + 1
+	birthday_size_b := data[birthday_size_pos]
+	birthday_size := int(birthday_size_b)
+	birthday_end := birthday_size_pos + 1 + birthday_size
+	birthday := DeserializeString(data[birthday_size_pos + 1:birthday_end])
+
+	// Integer indicator
+	amount_indicator := birthday_indicator + birthday_size + 2
+	amount_size_pos := amount_indicator + 1
+	amount_size_b := data[amount_size_pos]
+	amount_size := int(amount_size_b)
+	amount_pos := amount_size_pos + 1
+	amount_end := amount_pos + amount_size
+	amount := DeserializeUInteger64(data[amount_indicator:amount_end])
+
+	bet := &Bet {
+			name: name,
+			surname: surname,
+			document: document,
+			birthday: birthday,
+			amount: amount,
+	}
+
+	return bet
+}
 
 
 // I avoided bet for simplicity's sake and because the environment variables are
@@ -215,7 +235,7 @@ func (c *Client) Close() {
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
 func NewClient(config ClientConfig) (*Client, error) {
-	data_path := "/agency-" + config.ID + ".csv"
+	data_path := ".data/agency-" + config.ID + ".csv"
 	agency_file, err := os.Open(data_path)
 	if err != nil {
 		return nil, err
@@ -264,8 +284,23 @@ func (c *Client) sendToServer(data []byte) error {
 }
 
 func (c *Client) endCommunication() {
-	end_indicator := [1]byte { byte(uint8(ClientBetEnd)) };
-	c.sendToServer(end_indicator[:])
+}
+
+func (c *Client) receiveWinners() ([]*Bet, error) {
+	// 1 for indicator + 10 for uint64
+	header, err := c.receiveMessage(1 + 10)
+	if err != nil {
+		return nil, err
+	}
+	length_b := header[1:11]
+	length := DeserializeUInteger64(length_b)
+
+	bets_b, err := c.receiveMessage(int(length))
+
+	bets := deserialize_bets(bets_b, int(length))
+
+
+	return bets, nil
 }
 
 // Will send a batch of complete bets to the server
@@ -414,7 +449,11 @@ func (c *Client) StartClientLoop() {
 
 	}
 	// msg, err := bufio.NewReader(c.conn).ReadString('\n')
-	c.endCommunication()
+	end_indicator := [1]byte { byte(uint8(ClientBetEnd)) };
+	c.sendToServer(end_indicator[:])
+
+	c.receiveWinners()
+
 	c.conn.Close()
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }

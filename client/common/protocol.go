@@ -54,7 +54,18 @@ func DeserializeString(data []byte) string {
 }
 
 func DeserializeUInteger64(data []byte) uint64 {
-	integer := binary.BigEndian.Uint64(data)
+	integer_indicator := data[0]
+	if integer_indicator != byte(ValueUInteger64) {
+		panic("Tried to deserialize uint64 when not uint64")
+	}
+
+	integer_length := data[1]
+	if uint8(integer_length) != 8 {
+		panic("Integer not length 8")
+	}
+
+	integer := binary.BigEndian.Uint64(data[2:10])
+
 
 	return integer
 }

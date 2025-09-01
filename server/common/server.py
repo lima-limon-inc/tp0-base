@@ -1,6 +1,6 @@
 import socket
 import logging
-from . utils import Bet, store_bets
+from . utils import Bet, store_bets, load_bets, has_won
 from . import protocol
 
 
@@ -30,8 +30,22 @@ class Server:
             self.__accept_new_connection()
             self.__handle_client_connection()
             self._current_client += 1
+        self._handle_lottery()
 
-    def _handle_lottery(self):
+    def _handle_lottery(self) :
+        bets = load_bets()
+        winners = []
+        for bet in bets:
+            if has_won(bet):
+                index = bet.agency
+                winners.append(bet)
+
+        winners_packages = self._serialize_winners(winners)
+
+    def _serialize_winners(self, winners: dict) -> list:
+        for winner in winners:
+            print(winner)
+        # TODO: Serialize bets
         abort()
 
     def run(self):
@@ -204,4 +218,18 @@ class Server:
         rest = rest[name_len_i + 2:]
 
         return Bet(agency, first_name, last_name, document, birthday, amount)
+
+
+    def __serialize_bet(self, bet: Bet) -> bytes:
+        bet_id = protocol.SerializeString(str(bet.agency))
+        bet_name = protocol.SerializeString(str(bet.first_name))
+        bet_surname = protocol.SerializeString(str(bet.last_name))
+        bet_document = protocol.SerializeString(str(bet.document))
+        bet_birthday = protocol.SerializeString(str(bet.birthdate))
+        bet_amount = protocol.SerializeUInteger64(bet.number)
+
+        package = bet_id + bet_name + bet_surname + bet_document + bet_birthday + bet_amount
+
+        return package
+
 
