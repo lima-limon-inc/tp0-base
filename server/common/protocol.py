@@ -26,7 +26,7 @@ def SerializeUInteger64(integer: int) -> bytes:
     integer_bytes = integer.to_bytes(8, byteorder='big')
 
     int_indicator = b'1'
-    length = len(integer_bytes).to_bytes()
+    length = len(integer_bytes).to_bytes(1, byteorder='big')
     header = int_indicator + length
 
     package = header + integer_bytes

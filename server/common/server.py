@@ -41,12 +41,33 @@ class Server:
                 winners.append(bet)
 
         winners_packages = self._serialize_winners(winners)
+        self._send_winners(winners_packages)
 
-    def _serialize_winners(self, winners: dict) -> list:
+    def _serialize_winners(self, winners: list) -> dict:
+        winners_serialized_by_agency = {}
         for winner in winners:
-            print(winner)
+            if winners_serialized_by_agency.get(winner.agency) == None:
+                winners_serialized_by_agency[winner.agency] = []
+            winners_serialized_by_agency[winner.agency].append(self.__serialize_bet(winner))
         # TODO: Serialize bets
-        abort()
+
+        packages_by_agency = {}
+        for agency, _ in winners_serialized_by_agency.items():
+            packages_by_agency[agency] = []
+
+        header = b'0'
+        for agency, winners in winners_serialized_by_agency.items():
+            total_size = 0
+            data_part = b''
+            for winner in winners:
+                total_size += len(winner)
+                data_part += winner
+
+            full_package = header + total_size.to_bytes(1, byteorder='big') + data_part
+
+            packages_by_agency[agency] = full_package
+
+        return packages_by_agency
 
     def run(self):
         """
@@ -232,4 +253,6 @@ class Server:
 
         return package
 
-
+    def _send_winners(self, winners: dict):
+        for agency, package in winners.items():
+            self.__send_bytes(package, agency - 1)
