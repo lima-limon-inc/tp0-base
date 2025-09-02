@@ -299,7 +299,7 @@ func (c *Client) receiveWinners() ([]*Bet, error) {
 
 	bets := deserialize_bets(bets_b, int(length))
 
-	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v.",
+	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v",
 		len(bets),
 	)
 
