@@ -11,6 +11,7 @@ services:
     entrypoint: python3 /main.py
     environment:
       - PYTHONUNBUFFERED=1
+      - AMOUNT_OF_CLIENTS=5
       # Esto lo comento porque esta variable de ambiente se define en el config.ini
       # - LOGGING_LEVEL=DEBUG
     networks:
