@@ -70,7 +70,6 @@ class Server:
                     data_part += winner
 
             full_package = header + protocol.SerializeUInteger64(total_size) + data_part
-            print(full_package)
 
             packages_by_agency[agency] = full_package
 
