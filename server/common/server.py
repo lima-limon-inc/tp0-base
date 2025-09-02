@@ -16,6 +16,7 @@ class Server:
 
         self._current_clients: list[socket.socket] = []
         self._current_client = 0
+        self._client_by_agente = {}
 
         self._killed = False
 
@@ -207,6 +208,9 @@ class Server:
         name_len = rest[1:2]    # 1
         name_len_i = int.from_bytes(name_len, byteorder='big', signed=True) # 1
         agency = protocol.DeserializeString(rest[2: 2 + name_len_i])
+        if int(agency) not in self._client_by_agente:
+            self._client_by_agente[int(agency)] = self._current_clients[self._current_client]
+
         rest = rest[name_len_i + 2:]
 
         string_type = rest[0:1]
@@ -264,4 +268,5 @@ class Server:
 
     def _send_winners(self, winners: dict):
         for agency, package in winners.items():
-            self.__send_bytes(package, agency - 1)
+            # self.__send_bytes(package, agency - 1)
+            self._client_by_agente[agency].send(package)
