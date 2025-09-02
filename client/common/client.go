@@ -457,6 +457,8 @@ func (c *Client) StartClientLoop() {
 
 	c.receiveWinners()
 
+	time.Sleep(c.config.LoopPeriod)
+
 	c.conn.Close()
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
