@@ -30,9 +30,8 @@ class Server:
             self.__accept_new_connection()
             self.__handle_client_connection()
             self._current_client += 1
-        self._handle_lottery()
 
-    def _handle_lottery(self) :
+    def _handle_lottery(self):
         bets = load_bets()
         winners = []
         for bet in bets:
@@ -41,6 +40,8 @@ class Server:
 
         winners_packages = self._serialize_winners(winners)
         self._send_winners(winners_packages)
+
+        self._current_client = 0
 
     def _serialize_winners(self, winners: list) -> dict:
         winners_serialized_by_agency = {}

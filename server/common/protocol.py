@@ -10,7 +10,7 @@ def SerializeString(string: str) -> bytes:
     str_bytes = string.encode('utf-8')
 
     str_indicator = b'0'
-    length = len(str_bytes).to_bytes()
+    length = len(str_bytes).to_bytes(1, byteorder='big')
     header = str_indicator + length
 
     package = header + str_bytes
