@@ -179,7 +179,7 @@ class Server:
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
 
         client_id_byte = self.__receive_bytes(2, c)
-        length_id = int(client_id_byte[1:2])
+        length_id = protocol.DeserializeUInteger8(client_id_byte[1:2])
 
         client_id = self.__receive_bytes(length_id, c)
         client_id = int(protocol.DeserializeString(client_id))
