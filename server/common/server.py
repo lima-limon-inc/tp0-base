@@ -61,7 +61,6 @@ class Server:
 
         # for agency, winners in winners_serialized_by_agency.items():
         for agency in self._client_by_agente.keys():
-            print(agency)
             total_size = 0
             data_part = b''
             if winners_serialized_by_agency.get(agency) != None:
@@ -72,7 +71,6 @@ class Server:
 
             full_package = header + protocol.SerializeUInteger64(total_size) + data_part
 
-            print(full_package)
             packages_by_agency[agency] = full_package
 
         return packages_by_agency

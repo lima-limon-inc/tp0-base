@@ -288,24 +288,16 @@ func (c *Client) endCommunication() {
 
 func (c *Client) receiveWinners() ([]*Bet, error) {
 	// 1 for indicator + 10 for uint64
-	println("Espero longitud")
-	log.Infof("JKLAJFLAJLKJAKLJALKJAKLJ",
-	)
 	header, err := c.receiveMessage(1 + 10)
-	println("Recibi longitud")
 	if err != nil {
 		return nil, err
 	}
 	length_b := header[1:11]
 	length := DeserializeUInteger64(length_b)
 
-	println("Espero bets")
 	bets_b, err := c.receiveMessage(int(length))
 
 	bets := deserialize_bets(bets_b, int(length))
-	for i := 0 ; i < len(bets) ; i++ {
-		fmt.Printf("%+v\n", bets[i])
-	}
 
 	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v",
 		len(bets),
@@ -465,7 +457,6 @@ func (c *Client) StartClientLoop() {
 
 	c.receiveWinners()
 
-	println("FIN LOOP")
 	// time.Sleep(c.config.LoopPeriod)
 
 	c.conn.Close()
