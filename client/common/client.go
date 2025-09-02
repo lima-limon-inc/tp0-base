@@ -235,7 +235,7 @@ func (c *Client) Close() {
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
 func NewClient(config ClientConfig) (*Client, error) {
-	data_path := ".data/agency-" + config.ID + ".csv"
+	data_path := "/agency-" + config.ID + ".csv"
 	agency_file, err := os.Open(data_path)
 	if err != nil {
 		return nil, err
@@ -299,6 +299,9 @@ func (c *Client) receiveWinners() ([]*Bet, error) {
 
 	bets := deserialize_bets(bets_b, int(length))
 
+	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v.",
+		len(bets),
+	)
 
 	return bets, nil
 }

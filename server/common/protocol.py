@@ -25,7 +25,9 @@ def DeserializeUInteger64(bytes_integer: bytes) -> int:
 def SerializeUInteger64(integer: int) -> bytes:
     integer_bytes = integer.to_bytes(8, byteorder='big')
 
-    int_indicator = b'1'
+    int_indicator_i = 1
+    int_indicator = int_indicator_i.to_bytes(1, byteorder='big')
+
     length = len(integer_bytes).to_bytes(1, byteorder='big')
     header = int_indicator + length
 

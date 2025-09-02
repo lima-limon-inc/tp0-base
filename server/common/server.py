@@ -37,7 +37,6 @@ class Server:
         winners = []
         for bet in bets:
             if has_won(bet):
-                index = bet.agency
                 winners.append(bet)
 
         winners_packages = self._serialize_winners(winners)
@@ -55,7 +54,8 @@ class Server:
         for agency, _ in winners_serialized_by_agency.items():
             packages_by_agency[agency] = []
 
-        header = b'0'
+        header_i = 0
+        header = header_i.to_bytes(1, byteorder='big')
         for agency, winners in winners_serialized_by_agency.items():
             total_size = 0
             data_part = b''
@@ -63,7 +63,7 @@ class Server:
                 total_size += len(winner)
                 data_part += winner
 
-            full_package = header + total_size.to_bytes(1, byteorder='big') + data_part
+            full_package = header + protocol.SerializeUInteger64(total_size) + data_part
 
             packages_by_agency[agency] = full_package
 
@@ -249,7 +249,15 @@ class Server:
         bet_birthday = protocol.SerializeString(str(bet.birthdate))
         bet_amount = protocol.SerializeUInteger64(bet.number)
 
-        package = bet_id + bet_name + bet_surname + bet_document + bet_birthday + bet_amount
+        bet_data = bet_id + bet_name + bet_surname + bet_document + bet_birthday + bet_amount
+
+        bet_identifier_i = 0
+        bet_identifier = bet_identifier_i.to_bytes(1, byteorder='big')
+        length_i = len(bet_data)
+        length = length_i.to_bytes(1, byteorder='big')
+        header = bet_identifier + length
+
+        package = header + bet_data
 
         return package
 
