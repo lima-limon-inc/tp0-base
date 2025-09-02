@@ -98,12 +98,12 @@ class Server:
                 break
 
     # Size: Amount of bytes to read
-    def __receive_bytes(self, size, client_index) -> bytes:
+    def __receive_bytes(self, size, skt: socket.socket) -> bytes:
         buff: bytes  = b''
         remaining_size = size
         while remaining_size > 0:
             # Received bytes
-            received = self._client_by_agente[client_index].recv(size)
+            received = skt.recv(size)
             buff = buff + received
             remaining_size -= len(received)
 
@@ -126,6 +126,7 @@ class Server:
         If a problem arises in the communication with the client, the
         client socket will also be closed
         """
+        current_socket = self._client_by_agente[client_id]
         while True:
             try:
                 # TODO: Modify the receive to avoid short-reads
@@ -134,7 +135,7 @@ class Server:
                 # Primer byte indicador de apuestas
                 # Siguiente es un integer empaquetado:
                 # # 1 byte indicador
-                initial_type = self.__receive_bytes(1, client_id)
+                initial_type = self.__receive_bytes(1, current_socket)
                 initial_indicator = protocol.DeserializeUInteger8(initial_type)
                 if initial_indicator == 2:
                     logging.info(f'action: apuesta_finalizadas | result: success | status: finished ')
@@ -143,12 +144,12 @@ class Server:
                 # # 1 byte longitud
                 # # 8 bytes datos
                 # 1 + 1 + 1 + 8 = 11
-                initial_size = self.__receive_bytes(10, client_id)
+                initial_size = self.__receive_bytes(10, current_socket)
 
                 size = protocol.DeserializeUInteger64(initial_size[3:11])
 
                 # Now, we read all that data
-                bets_batch_bytes = self.__receive_bytes(size, client_id)
+                bets_batch_bytes = self.__receive_bytes(size, current_socket)
                 try:
                     bets = self.__deserialize_batches(bets_batch_bytes)
                     store_bets(bets)
@@ -177,10 +178,10 @@ class Server:
         c, addr = self._server_socket.accept()
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
 
-        client_id_byte = self.__receive_bytes(2, self._current_client)
+        client_id_byte = self.__receive_bytes(2, c)
         length_id = int(client_id_byte[1:2])
 
-        client_id = self.__receive_bytes(length_id, self._current_client)
+        client_id = self.__receive_bytes(length_id, c)
         client_id = int(protocol.DeserializeString(client_id))
 
         self._client_by_agente[client_id] = c
