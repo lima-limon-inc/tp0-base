@@ -58,15 +58,21 @@ class Server:
 
         header_i = 0
         header = header_i.to_bytes(1, byteorder='big')
-        for agency, winners in winners_serialized_by_agency.items():
+
+        # for agency, winners in winners_serialized_by_agency.items():
+        for agency in self._client_by_agente.keys():
+            print(agency)
             total_size = 0
             data_part = b''
-            for winner in winners:
-                total_size += len(winner)
-                data_part += winner
+            if winners_serialized_by_agency.get(agency) != None:
+                winners = winners_serialized_by_agency[agency]
+                for winner in winners:
+                    total_size += len(winner)
+                    data_part += winner
 
             full_package = header + protocol.SerializeUInteger64(total_size) + data_part
 
+            print(full_package)
             packages_by_agency[agency] = full_package
 
         return packages_by_agency

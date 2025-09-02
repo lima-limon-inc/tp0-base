@@ -3,7 +3,7 @@ package common
 import (
 	"io"
 
-	// "bufio"
+	"fmt"
 	"net"
 	"time"
 	"os"
@@ -235,7 +235,7 @@ func (c *Client) Close() {
 // NewClient Initializes a new client receiving the configuration
 // as a parameter
 func NewClient(config ClientConfig) (*Client, error) {
-	data_path := "/agency-" + config.ID + ".csv"
+	data_path := ".data/dataset/agency-" + config.ID + ".csv"
 	agency_file, err := os.Open(data_path)
 	if err != nil {
 		return nil, err
@@ -288,16 +288,22 @@ func (c *Client) endCommunication() {
 
 func (c *Client) receiveWinners() ([]*Bet, error) {
 	// 1 for indicator + 10 for uint64
+	println("Espero longitud")
 	header, err := c.receiveMessage(1 + 10)
+	println("Recibi longitud")
 	if err != nil {
 		return nil, err
 	}
 	length_b := header[1:11]
 	length := DeserializeUInteger64(length_b)
 
+	println("Espero bets")
 	bets_b, err := c.receiveMessage(int(length))
 
 	bets := deserialize_bets(bets_b, int(length))
+	for i := 0 ; i < len(bets) ; i++ {
+		fmt.Printf("%+v\n", bets[i])
+	}
 
 	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %v",
 		len(bets),
@@ -457,7 +463,8 @@ func (c *Client) StartClientLoop() {
 
 	c.receiveWinners()
 
-	time.Sleep(c.config.LoopPeriod)
+	println("FIN LOOP")
+	// time.Sleep(c.config.LoopPeriod)
 
 	c.conn.Close()
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
