@@ -14,7 +14,7 @@ class Server:
 
         self._expected_clients = expected_clients
 
-        self._current_clients: list[socket.socket] = []
+        # self._current_clients: list[socket.socket] = []
         self._current_client = 0
         self._client_by_agente = {}
 
@@ -22,7 +22,7 @@ class Server:
 
     def finalize(self):
         self._server_socket.close()
-        for client in self._current_clients:
+        for client in self._client_by_agente:
             client.close()
         self._killed = True
 
@@ -102,7 +102,7 @@ class Server:
         remaining_size = size
         while remaining_size > 0:
             # Received bytes
-            received = self._current_clients[client_index].recv(size)
+            received = self._client_by_agente[client_index].recv(size)
             buff = buff + received
             remaining_size -= len(received)
 
@@ -114,7 +114,7 @@ class Server:
         remaining_size = size
         while remaining_size > 0:
             # Received bytes
-            sent_data = self._current_clients[client_index].send(data)
+            sent_data = self._client_by_agente[client_index].send(data)
             remaining_size -= sent_data
 
 
@@ -176,7 +176,13 @@ class Server:
         c, addr = self._server_socket.accept()
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
 
-        self._current_clients.append(c)
+        client_id_byte = self.__receive_bytes(2, self._current_client)
+        length_id = int(client_id_byte[1:2])
+
+        client_id = self.__receive_bytes(length_id, self._current_client)
+        client_id = int(protocol.DeserializeString(client_id))
+
+        self._client_by_agente[client_id] = c
 
         return
 
@@ -212,8 +218,8 @@ class Server:
         name_len = rest[1:2]    # 1
         name_len_i = int.from_bytes(name_len, byteorder='big', signed=True) # 1
         agency = protocol.DeserializeString(rest[2: 2 + name_len_i])
-        if int(agency) not in self._client_by_agente:
-            self._client_by_agente[int(agency)] = self._current_clients[self._current_client]
+        # if int(agency) not in self._client_by_agente:
+        #     self._client_by_agente[int(agency)] = self._current_clients[self._current_client]
 
         rest = rest[name_len_i + 2:]
 

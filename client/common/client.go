@@ -409,6 +409,9 @@ func (c *Client) StartClientLoop() {
 	// TODO: No hacer que se reconecte en cada iteracion
 	// Create the connection the server in every loop iteration. Send an
 	c.createClientSocket()
+	client_id := SerializeString(c.config.ID)
+
+	c.sendToServer(client_id)
 	for ; file_has_lines == true; {
 		// If the client is killed, break out of the loop inmediately
 		if c.killed {
