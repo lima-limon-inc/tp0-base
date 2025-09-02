@@ -289,6 +289,8 @@ func (c *Client) endCommunication() {
 func (c *Client) receiveWinners() ([]*Bet, error) {
 	// 1 for indicator + 10 for uint64
 	println("Espero longitud")
+	log.Infof("JKLAJFLAJLKJAKLJALKJAKLJ",
+	)
 	header, err := c.receiveMessage(1 + 10)
 	println("Recibi longitud")
 	if err != nil {
