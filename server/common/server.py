@@ -1,5 +1,7 @@
 import socket
 import logging
+import threading
+
 from . utils import Bet, store_bets, load_bets, has_won
 from . import protocol
 
@@ -14,9 +16,15 @@ class Server:
 
         self._expected_clients = expected_clients
 
-        # self._current_clients: list[socket.socket] = []
         self._current_client = 0
+
+        self._client_by_agente_lock = threading.Lock()
         self._client_by_agente = {}
+
+        self._client_threads = []
+
+        self._client_finished_lock = threading.Condition()
+        self._client_finished = 0
 
         self._killed = False
 
@@ -29,10 +37,25 @@ class Server:
     def _receive_clients(self):
         while self._current_client < self._expected_clients:
             client_id = self.__accept_new_connection()
-            self.__handle_client_connection(client_id)
+            client_thread = threading.Thread(target=self.__handle_client_connection, args=(client_id,))
+            self._client_threads.append(client_thread)
             self._current_client += 1
+            client_thread.start()
+
+    def _lottery_is_callable(self) -> bool:
+        return self._client_finished == self._expected_clients
+
 
     def _handle_lottery(self):
+        # Taken from: https://docs.python.org/3/library/threading.html#condition-objects
+
+        self._client_finished_lock.acquire()
+        while not self._lottery_is_callable():
+            # Wait releases the lock
+            self._client_finished_lock.wait()
+            # Once awakened, it re-acquires the lock
+        self._client_finished_lock.release()
+
         bets = load_bets()
         winners = []
         for bet in bets:
@@ -117,6 +140,22 @@ class Server:
             sent_data = self._client_by_agente[client_index].send(data)
             remaining_size -= sent_data
 
+    def __add_client_socket(self, client_id:int, skt: socket.socket):
+        self._client_by_agente_lock.acquire(blocking=True, timeout=-1)
+
+        self._client_by_agente[client_id] = skt
+
+        self._client_by_agente_lock.release()
+
+    def __get_client_socket(self, client_id:int) -> socket.socket:
+        self._client_by_agente_lock.acquire(blocking=True, timeout=-1)
+
+        client_skt = self._client_by_agente[client_id]
+
+        self._client_by_agente_lock.release()
+
+        return client_skt
+
 
     def __handle_client_connection(self, client_id):
         """
@@ -125,7 +164,7 @@ class Server:
         If a problem arises in the communication with the client, the
         client socket will also be closed
         """
-        current_socket = self._client_by_agente[client_id]
+        current_socket = self.__get_client_socket(client_id)
         while True:
             try:
                 # TODO: Modify the receive to avoid short-reads
@@ -163,6 +202,15 @@ class Server:
             except OSError as e:
                 logging.error("action: receive_message | result: fail | error: {e}")
 
+        self._client_finished_lock.acquire()
+        self._client_finished += 1
+
+        # In theory, only one thread is waiting
+        self._client_finished_lock.notifyAll()
+
+        self._client_finished_lock.release()
+
+
 
     def __accept_new_connection(self) -> int:
         """
@@ -183,7 +231,7 @@ class Server:
         client_id = self.__receive_bytes(length_id, c)
         client_id = int(protocol.DeserializeString(client_id))
 
-        self._client_by_agente[client_id] = c
+        self.__add_client_socket(client_id, c)
 
         return client_id
 
