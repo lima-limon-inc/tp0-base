@@ -28,8 +28,8 @@ class Server:
 
     def _receive_clients(self):
         while self._current_client < self._expected_clients:
-            self.__accept_new_connection()
-            self.__handle_client_connection()
+            client_id = self.__accept_new_connection()
+            self.__handle_client_connection(client_id)
             self._current_client += 1
 
     def _handle_lottery(self):
@@ -70,6 +70,7 @@ class Server:
                     data_part += winner
 
             full_package = header + protocol.SerializeUInteger64(total_size) + data_part
+            print(full_package)
 
             packages_by_agency[agency] = full_package
 
@@ -118,7 +119,7 @@ class Server:
             remaining_size -= sent_data
 
 
-    def __handle_client_connection(self):
+    def __handle_client_connection(self, client_id):
         """
         Read message from a specific client socket and closes the socket
 
@@ -133,7 +134,7 @@ class Server:
                 # Primer byte indicador de apuestas
                 # Siguiente es un integer empaquetado:
                 # # 1 byte indicador
-                initial_type = self.__receive_bytes(1, self._current_client)
+                initial_type = self.__receive_bytes(1, client_id)
                 initial_indicator = protocol.DeserializeUInteger8(initial_type)
                 if initial_indicator == 2:
                     logging.info(f'action: apuesta_finalizadas | result: success | status: finished ')
@@ -142,28 +143,28 @@ class Server:
                 # # 1 byte longitud
                 # # 8 bytes datos
                 # 1 + 1 + 1 + 8 = 11
-                initial_size = self.__receive_bytes(10, self._current_client)
+                initial_size = self.__receive_bytes(10, client_id)
 
                 size = protocol.DeserializeUInteger64(initial_size[3:11])
 
                 # Now, we read all that data
-                bets_batch_bytes = self.__receive_bytes(size, self._current_client)
+                bets_batch_bytes = self.__receive_bytes(size, client_id)
                 try:
                     bets = self.__deserialize_batches(bets_batch_bytes)
                     store_bets(bets)
                     logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
                     ok = bytes(1)
-                    self.__send_bytes(ok, self._current_client)
+                    self.__send_bytes(ok, client_id)
                 except:
                     logging.info(f'action: apuesta_recibida | result: fail')
                     ok = bytes(2)
-                    self.__send_bytes(ok, self._current_client)
+                    self.__send_bytes(ok, client_id)
 
             except OSError as e:
                 logging.error("action: receive_message | result: fail | error: {e}")
 
 
-    def __accept_new_connection(self):
+    def __accept_new_connection(self) -> int:
         """
         Accept new connections
 
@@ -184,7 +185,7 @@ class Server:
 
         self._client_by_agente[client_id] = c
 
-        return
+        return client_id
 
     # Bet
     # Size
