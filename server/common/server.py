@@ -30,7 +30,7 @@ class Server:
 
     def finalize(self):
         self._server_socket.close()
-        for client in self._client_by_agente:
+        for id, client in self._client_by_agente.items():
             client.close()
         self._killed = True
 
