@@ -25,6 +25,17 @@ Para el ejercicio 1 se creo un shell script que genera el docker compose. Este c
 
 Decidí usar un shell script en vez de un script de python auxiliar por simplicidad.
 
+### Ejercicio 2
+
+Para el ejercicio 2 se añadió en el shell script la columna de "volumes".
+
+### Ejercicio 3
+
+En ese ejercicio escribi un shell script que usase netcat desde el container. Para hacer el script mas versatil y evitar tener los valores hardcodeados, lee los archivos de configuracon para tener el puerto e IP usados.
+
+### Ejercicio 4
+
+
 ### Servidor
 
 Se trata de un "echo server", en donde los mensajes recibidos por el cliente se responden inmediatamente y sin alterar. 
