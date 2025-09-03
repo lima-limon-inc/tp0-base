@@ -29,7 +29,7 @@ generate_client() {
   ${client_name}:
     container_name: ${client_name}
     image: client:latest
-    entrypoint: /client
+    entrypoint: ./client_exe
     environment:
       - CLI_ID=${1}
       - NOMBRE=MATIAS
@@ -43,9 +43,10 @@ generate_client() {
       - testing_net
     depends_on:
       - server
+    working_dir: /home/container/tp
     volumes:
-      - ./client/config.yaml:/config.yaml
-      - ./.data/agency-${1}.csv:/agency-${1}.csv
+      - ./client/config.yaml:/home/container/tp/client/config.yaml
+      - ./.data/agency-${1}.csv:/home/container/tp/.data/agency-${1}.csv
 "
     compose_template+="${client_template}"
 }

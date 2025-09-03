@@ -18,7 +18,7 @@ services:
   client1:
     container_name: client1
     image: client:latest
-    entrypoint: /client
+    entrypoint: /home/container/tp/client_exe
     environment:
       - CLI_ID=1
       - NOMBRE=MATIAS
