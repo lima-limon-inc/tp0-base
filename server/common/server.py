@@ -117,6 +117,8 @@ class Server:
             try:
                 self._receive_clients()
                 self._handle_lottery()
+                for client in self._client_threads:
+                    client.join()
             except OSError as e:
                 # If we catch an error, then most probably we received a signal that closed our sockets
                 break
