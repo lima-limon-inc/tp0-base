@@ -1,6 +1,7 @@
 import socket
 import logging
 import threading
+import os
 
 from . utils import Bet, store_bets, load_bets, has_won
 from . import protocol
@@ -183,12 +184,15 @@ class Server:
                     logging.info(f'action: apuesta_finalizadas | result: success | status: finished ')
                     break
 
+                # # 1 byte tipo
                 # # 1 byte longitud
                 # # 8 bytes datos
                 # 1 + 1 + 1 + 8 = 11
                 initial_size = self.__receive_bytes(10, current_socket)
 
-                size = protocol.DeserializeUInteger64(initial_size[3:11])
+                size, rest_of_bytes = protocol.DeserializeUInteger64(initial_size)
+                if len(rest_of_bytes) != 0:
+                    print(f"Warning, remaining bytes: {len(rest_of_bytes)}")
 
                 # Now, we read all that data
                 bets_batch_bytes = self.__receive_bytes(size, current_socket)
@@ -273,9 +277,6 @@ class Server:
         name_len = rest[1:2]    # 1
         name_len_i = int.from_bytes(name_len, byteorder='big', signed=True) # 1
         agency = protocol.DeserializeString(rest[2: 2 + name_len_i])
-        # if int(agency) not in self._client_by_agente:
-        #     self._client_by_agente[int(agency)] = self._current_clients[self._current_client]
-
         rest = rest[name_len_i + 2:]
 
         string_type = rest[0:1]
@@ -302,11 +303,7 @@ class Server:
         birthday = protocol.DeserializeString(rest[2: 2 + name_len_i ])
         rest = rest[name_len_i + 2:]
 
-        integer_type = rest[0:1]
-        name_len = rest[1:2]
-        name_len_i = int.from_bytes(name_len, byteorder='big', signed=True)
-        amount = protocol.DeserializeUInteger64(rest[2: 2 + name_len_i ])
-        rest = rest[name_len_i + 2:]
+        amount, rest = protocol.DeserializeUInteger64(rest)
 
         return Bet(agency, first_name, last_name, document, birthday, amount)
 
