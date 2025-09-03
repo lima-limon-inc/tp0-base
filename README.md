@@ -17,6 +17,14 @@ Los targets disponibles son:
 | `docker-image`  | Construye las imágenes a ser utilizadas tanto en el servidor como en el cliente. Este target es utilizado por **docker-compose-up**, por lo cual se lo puede utilizar para probar nuevos cambios en las imágenes antes de arrancar el proyecto. |
 | `build` | Compila la aplicación cliente para ejecución en el _host_ en lugar de en Docker. De este modo la compilación es mucho más veloz, pero requiere contar con todo el entorno de Golang y Python instalados en la máquina _host_. |
 
+## Resoluciones
+
+### Ejercicio 1
+
+Para el ejercicio 1 se creo un shell script que genera el docker compose. Este contiene string "templates" que generan el docker compose usando los argumentos pasados por la CLI a la hora de llamar al script.
+
+Decidí usar un shell script en vez de un script de python auxiliar por simplicidad.
+
 ### Servidor
 
 Se trata de un "echo server", en donde los mensajes recibidos por el cliente se responden inmediatamente y sin alterar. 
