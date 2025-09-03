@@ -35,6 +35,33 @@ En ese ejercicio escribi un shell script que usase netcat desde el container. Pa
 
 ### Ejercicio 4
 
+En el caso del cliente, se crea un canal justo antes de empezar el loop del cliente. Este canal hace de "closure asincrona": recibe una referencia a la instancia del cliente y llama a su metodo close apenas el canal reciba la señal de SIGTERM.
+
+En el server repliqué la misma estructura, definí un closure antes de llamar a la funcion main del servidor. Dicho closure recibe una referencia a la instanciacion del cliente.
+Luego, se bindea este closure como handler de la señal SIGTERM.
+
+### Ejercicio 5
+El protocolo de comunicacion es del tipo "tamaño fijo". Los tipos primitivos se codifican de la siguiente forma:
+
+- Un byte para el tipo de dato (actualmente: string, uint64 o uint8; siendo 0, 1 y 2 respectivamente)
+- Un byte para resto de la informacion (en el caso del string, es variable, en los otros dos es siempre 8 y 1 respectivamente)
+- N bytes para la informacin restante.
+
+Esta codificacion esta implementada en los archivos `client/protocol.go` y `server/common/protocol.py`.
+
+Luego, los structs de logica de negocio siguen un esquema similar. Particularmente, la unica serializacion usada es la de las apuestas, las cuales se serializan de la siguiente manera:
+- Un byte para el tipo de dato (actualmente: solo 0 para las `Bet`)
+- Un uint8 para la longitud de los datos restantes
+- N bytes para la informacin restante.
+    - Esto corresponde a cada uno de los campos del struct, los cuales se serializan usando el protocolo descripto arriba.
+
+### Ejercicio 6
+En el ejercicio 6 consistió de batchear el envio de apuestas, a diferencia del ejercicio anterior donde cada apuesta se enviaba por separado.
+Para esto, se agregaban n apuestas en un buffer y luego se enviaba todas juntas bajo la siguiente serializacion.
+- Un byte para indicar que era un batche de apuestas (1)
+- Un uint64 serializado usando la serializacion del ejercicio anterior para indicar la longitud de las apuestas serializadas.
+- Las apuestas serializadas.
+
 
 ### Servidor
 
