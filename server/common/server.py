@@ -39,8 +39,8 @@ class Server:
 
     def _receive_clients(self):
         while self._current_client < self._expected_clients:
-            client_id = self.__accept_new_connection()
-            client_thread = threading.Thread(target=self.__handle_client_connection, args=(client_id,))
+            client_socket = self.__accept_new_connection()
+            client_thread = threading.Thread(target=self.__handle_client_connection, args=(client_socket,))
             self._client_threads.append(client_thread)
             self._current_client += 1
             client_thread.start()
@@ -162,14 +162,21 @@ class Server:
         return client_skt
 
 
-    def __handle_client_connection(self, client_id):
+    def __handle_client_connection(self, client_socket: socket.socket):
         """
         Read message from a specific client socket and closes the socket
 
         If a problem arises in the communication with the client, the
         client socket will also be closed
         """
-        current_socket = self.__get_client_socket(client_id)
+        client_id_byte = self.__receive_bytes(2, client_socket)
+        length_id = protocol.DeserializeUInteger8(client_id_byte[1:2])
+
+        client_id = self.__receive_bytes(length_id, client_socket)
+        client_id = int(protocol.DeserializeString(client_id))
+
+        self.__add_client_socket(client_id, client_socket)
+
         while True:
             try:
                 # TODO: Modify the receive to avoid short-reads
@@ -178,7 +185,7 @@ class Server:
                 # Primer byte indicador de apuestas
                 # Siguiente es un integer empaquetado:
                 # # 1 byte indicador
-                initial_type = self.__receive_bytes(1, current_socket)
+                initial_type = self.__receive_bytes(1, client_socket)
                 initial_indicator = protocol.DeserializeUInteger8(initial_type)
                 if initial_indicator == 2:
                     logging.info(f'action: apuesta_finalizadas | result: success | status: finished ')
@@ -188,14 +195,14 @@ class Server:
                 # # 1 byte longitud
                 # # 8 bytes datos
                 # 1 + 1 + 1 + 8 = 11
-                initial_size = self.__receive_bytes(10, current_socket)
+                initial_size = self.__receive_bytes(10, client_socket)
 
                 size, rest_of_bytes = protocol.DeserializeUInteger64(initial_size)
                 if len(rest_of_bytes) != 0:
                     print(f"Warning, remaining bytes: {len(rest_of_bytes)}")
 
                 # Now, we read all that data
-                bets_batch_bytes = self.__receive_bytes(size, current_socket)
+                bets_batch_bytes = self.__receive_bytes(size, client_socket)
                 try:
                     bets = self.__deserialize_batches(bets_batch_bytes)
                     self._store_bets_lock.acquire()
@@ -222,7 +229,7 @@ class Server:
 
 
 
-    def __accept_new_connection(self) -> int:
+    def __accept_new_connection(self) -> socket.socket:
         """
         Accept new connections
 
@@ -232,18 +239,10 @@ class Server:
 
         # Connection arrived
         logging.info('action: accept_connections | result: in_progress')
-        c, addr = self._server_socket.accept()
+        client_skt, addr = self._server_socket.accept()
         logging.info(f'action: accept_connections | result: success | ip: {addr[0]}')
 
-        client_id_byte = self.__receive_bytes(2, c)
-        length_id = protocol.DeserializeUInteger8(client_id_byte[1:2])
-
-        client_id = self.__receive_bytes(length_id, c)
-        client_id = int(protocol.DeserializeString(client_id))
-
-        self.__add_client_socket(client_id, c)
-
-        return client_id
+        return client_skt
 
     # Bet
     # Size
