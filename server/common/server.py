@@ -18,6 +18,8 @@ class Server:
 
         self._current_client = 0
 
+        self._store_bets_lock = threading.Lock()
+
         self._client_by_agente_lock = threading.Lock()
         self._client_by_agente = {}
 
@@ -190,7 +192,9 @@ class Server:
                 bets_batch_bytes = self.__receive_bytes(size, current_socket)
                 try:
                     bets = self.__deserialize_batches(bets_batch_bytes)
+                    self._store_bets_lock.acquire()
                     store_bets(bets)
+                    self._store_bets_lock.release()
                     logging.info(f'action: apuesta_recibida | result: success | cantidad: {len(bets)}')
                     ok = bytes(1)
                     self.__send_bytes(ok, client_id)
