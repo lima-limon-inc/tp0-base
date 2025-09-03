@@ -61,11 +61,29 @@ Para esto, se agregaban n apuestas en un buffer y luego se enviaba todas juntas 
 - Un byte para indicar que era un batche de apuestas (1)
 - Un uint64 serializado usando la serializacion del ejercicio anterior para indicar la longitud de las apuestas serializadas.
 - Las apuestas serializadas.
+- Las apuestas serializadas.
 
+Cuando termina de procesar todas las apuestas se envia un byte final indicando el fin del procesamiento.
+
+### Ejercicio 7
+En este ejercicio, se tiene que realizar el sorteo despues de que todas las agencias hayan publicado sus apuestas. Para esto, el servidor recibe por parametro la cantidad de clientes que espera (esto se obtiene de los archivos de configuracion o de una environment variable en su defecto).
+Despues de recibir y almacenar todos los batches de forma serial, se procede a procesar los ganadores.
+
+Se leen las apuestas recibidas, buscando las apuestas ganadoras y se separan en un diccionario segun la agencia que las envio. Luego, se le envia a cada agencia la lista de sus ganadores, siguiendo la siguiente serializacion:
+- Un byte indicando el tipo "ganador"
+- Un uint64 serializado indicando la longitud
+- Las apuestas serializadas siguiendo la serializacion del 6
+
+### Ejercicio 8
+Para el ejercicio 8, se hizo uso de multithreading para el procesamiento paralelo de la informacion.
+Esto requirio el uso de los siguientes mecanismos de sincronización:
+- Un Lock para sincronizar la escritura de las bets en disco (a traves de la funcion `store_bets`).
+- Un Lock para almacenar los sockets de los clientes.
+- Un Conditional variable para indicar cuando todos los clientes enviaron sus apuestas y asi enviar los ganadores.
 
 ### Servidor
 
-Se trata de un "echo server", en donde los mensajes recibidos por el cliente se responden inmediatamente y sin alterar. 
+Se trata de un "echo server", en donde los mensajes recibidos por el cliente se responden inmediatamente y sin alterar.
 
 Se ejecutan en bucle las siguientes etapas:
 
