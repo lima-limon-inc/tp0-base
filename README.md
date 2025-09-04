@@ -87,7 +87,9 @@ Este consiste de lo siguiente:
 En el loop, el servidor se queda a la espera de la conexion de un cliente. Apenas detecta la conexion de un cliente, crea un thread nuevo y llama a la funcion `__handle_client_connection`. Es en este hilo donde se ejecuta la logica de recibimiento de las apuestas por cada cliente.
 
 Cuando el servidor detecta que llegaron todos los clientes que esperaba, comienza el procesamiento de la loteria en el thread principal; lo cual se ejecuta en la funcion `_handle_lottery`.
-El calculo de los ganadores solo se ejecuta cuando todos los
+El calculo de los ganadores solo se ejecuta cuando todos los clientes enviaron el mensaje de "fin de apuesta". Esta sincronización es manejada a traves de la Conditional variable `_client_finished_lock`, la cual es un integer que cada hilo cliente incrementa en 1 cuando recibe dicho mensaje.
+
+El hecho de estar usando multithreading en Python implica que el server no le va a poder sacar el mayor provecho a los hilos, debido a las limitaciones de sincronización que el GIL impone. Sin embargo, esta limitacion no deberia afectar sustancialmente a la implementacion debido a que cada hilo hace operaciones principalmente de I/O, las cuales [segun la documentacion oficial sobre el GIL](https://wiki.python.org/moin/GlobalInterpreterLock), ocurren por fuera de las areas afectadas por el GIL. Las unicas areas afectadas son las areas de procesamiento intermedio, las cuales solo implican la serializacion y desserializacion de los datos recibidos.
 
 ### Servidor
 
