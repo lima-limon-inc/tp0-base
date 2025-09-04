@@ -81,6 +81,14 @@ Esto requirio el uso de los siguientes mecanismos de sincronización:
 - Un Lock para almacenar los sockets de los clientes.
 - Un Conditional variable para indicar cuando todos los clientes enviaron sus apuestas y asi enviar los ganadores.
 
+El servidor maneja la concurrencia utilizando multithreading. El hilo principal inicialmente hace la lectura de las variables de ambiente e incializa el servidor; para luego iniciar su loop prinicipal.
+
+Este consiste de lo siguiente:
+En el loop, el servidor se queda a la espera de la conexion de un cliente. Apenas detecta la conexion de un cliente, crea un thread nuevo y llama a la funcion `__handle_client_connection`. Es en este hilo donde se ejecuta la logica de recibimiento de las apuestas por cada cliente.
+
+Cuando el servidor detecta que llegaron todos los clientes que esperaba, comienza el procesamiento de la loteria en el thread principal; lo cual se ejecuta en la funcion `_handle_lottery`.
+El calculo de los ganadores solo se ejecuta cuando todos los
+
 ### Servidor
 
 Se trata de un "echo server", en donde los mensajes recibidos por el cliente se responden inmediatamente y sin alterar.
