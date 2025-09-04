@@ -36,6 +36,8 @@ class Server:
         for id, client in self._client_by_agente.items():
             client.close()
         self._killed = True
+        for client in self._client_threads:
+            client.join()
 
     def _receive_clients(self):
         while self._current_client < self._expected_clients:

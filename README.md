@@ -102,3 +102,22 @@ Se espera que se redacte una sección del README en donde se indique cómo ejecu
 Se proveen [pruebas automáticas](https://github.com/7574-sistemas-distribuidos/tp0-tests) de caja negra. Se exige que la resolución de los ejercicios pase tales pruebas, o en su defecto que las discrepancias sean justificadas y discutidas con los docentes antes del día de la entrega. El incumplimiento de las pruebas es condición de desaprobación, pero su cumplimiento no es suficiente para la aprobación. Respetar las entradas de log planteadas en los ejercicios, pues son las que se chequean en cada uno de los tests.
 
 La corrección personal tendrá en cuenta la calidad del código entregado y casos de error posibles, se manifiesten o no durante la ejecución del trabajo práctico. Se pide a los alumnos leer atentamente y **tener en cuenta** los criterios de corrección informados  [en el campus](https://campusgrado.fi.uba.ar/mod/page/view.php?id=73393).
+
+# Correcciones y observaciones
+
+## 04 de septiembre
+Una de las observaciones sobre la implementación del TP fue el manejo de las conexiones. Actualmente, el servidor mantiene viva la conexion con cada uno de los clientes, mientras espera a poder procesar los ganadores.
+A pesar de ser "correcto" para el alcance del TP0, este enfoque podria llegar a generar problemas si el servidor tuviese muchas conexiones simultaneamente (en el orden de las 1000 por ejemplo); lo que llevaria a que el servidor colapse.
+La mejora planteada por el profesor es que el cliente se desconecte del servidor y vaya paulatinamente (utilizando un algoritmo de exponential backoff) "pingeando" al servidor para obtener su resultado.
+Alternativamente, el servidor podria crear un hilo "enviador" que trate de conectarse al cliente y este le envie la informacion asi.
+
+En terminos de correcciones, la correcion principal fue en el manejo de la señal por parte del servidor. El servidor, cuando recibe el SIGTERM, se encarga de cerrar su socket receptor, el socket de todos los cliente y marcarse como "muerto". Sin embargo, no se encarga de joinear todos los hilos, como hace en el caso de comportamiento ideal.
+Entonces se anadieron las lineas:
+
+``` python
+for client in self._client_threads:
+    client.join()
+```
+
+A la funcion `finalize` del servidor.
+
