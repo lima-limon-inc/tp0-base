@@ -31,65 +31,64 @@ Para el ejercicio 2 se añadió en el shell script la columna de "volumes".
 
 ### Ejercicio 3
 
-En ese ejercicio escribi un shell script que usase netcat desde el container. Para hacer el script mas versatil y evitar tener los valores hardcodeados, lee los archivos de configuracon para tener el puerto e IP usados.
+En ese ejercicio escribí un shell script que usase netcat desde el container. Para hacer el script mas versátil y evitar tener los valores hardcodeados, lee los archivos de configuración para tener el puerto e IP usados.
 
 ### Ejercicio 4
 
-En el caso del cliente, se crea un canal justo antes de empezar el loop del cliente. Este canal hace de "closure asincrona": recibe una referencia a la instancia del cliente y llama a su metodo close apenas el canal reciba la señal de SIGTERM.
+En el caso del cliente, se crea un canal justo antes de empezar el loop del cliente. Este canal hace de "closure asíncrona": recibe una referencia a la instancia del cliente y llama a su método close apenas el canal reciba la señal de SIGTERM.
 
-En el server repliqué la misma estructura, definí un closure antes de llamar a la funcion main del servidor. Dicho closure recibe una referencia a la instanciacion del cliente.
+En el server repliqué la misma estructura, definí un closure antes de llamar a la función main del servidor. Dicho closure recibe una referencia a la instanciacion del cliente.
 Luego, se bindea este closure como handler de la señal SIGTERM.
 
 ### Ejercicio 5
-El protocolo de comunicacion es del tipo "tamaño fijo". Los tipos primitivos se codifican de la siguiente forma:
+El protocolo de comunicación es del tipo "tamaño fijo". Los tipos primitivos se codifican de la siguiente forma:
 
 - Un byte para el tipo de dato (actualmente: string, uint64 o uint8; siendo 0, 1 y 2 respectivamente)
-- Un byte para resto de la informacion (en el caso del string, es variable, en los otros dos es siempre 8 y 1 respectivamente)
-- N bytes para la informacin restante.
+- Un byte para resto de la información (en el caso del string, es variable, en los otros dos es siempre 8 y 1 respectivamente)
+- N bytes para la información restante.
 
-Esta codificacion esta implementada en los archivos `client/protocol.go` y `server/common/protocol.py`.
+Esta codificación esta implementada en los archivos `client/protocol.go` y `server/common/protocol.py`.
 
-Luego, los structs de logica de negocio siguen un esquema similar. Particularmente, la unica serializacion usada es la de las apuestas, las cuales se serializan de la siguiente manera:
+Luego, los structs de lógica de negocio siguen un esquema similar. Particularmente, la única racionalización usada es la de las apuestas, las cuales se serializan de la siguiente manera:
 - Un byte para el tipo de dato (actualmente: solo 0 para las `Bet`)
 - Un uint8 para la longitud de los datos restantes
-- N bytes para la informacin restante.
+- N bytes para la información restante.
     - Esto corresponde a cada uno de los campos del struct, los cuales se serializan usando el protocolo descripto arriba.
 
 ### Ejercicio 6
-En el ejercicio 6 consistió de batchear el envio de apuestas, a diferencia del ejercicio anterior donde cada apuesta se enviaba por separado.
+En el ejercicio 6 consistió de batchear el envío de apuestas, a diferencia del ejercicio anterior donde cada apuesta se enviaba por separado.
 Para esto, se agregaban n apuestas en un buffer y luego se enviaba todas juntas bajo la siguiente serializacion.
 - Un byte para indicar que era un batche de apuestas (1)
 - Un uint64 serializado usando la serializacion del ejercicio anterior para indicar la longitud de las apuestas serializadas.
 - Las apuestas serializadas.
-- Las apuestas serializadas.
 
-Cuando termina de procesar todas las apuestas se envia un byte final indicando el fin del procesamiento.
+Cuando termina de procesar todas las apuestas se envía un byte final indicando el fin del procesamiento.
 
 ### Ejercicio 7
-En este ejercicio, se tiene que realizar el sorteo despues de que todas las agencias hayan publicado sus apuestas. Para esto, el servidor recibe por parametro la cantidad de clientes que espera (esto se obtiene de los archivos de configuracion o de una environment variable en su defecto).
-Despues de recibir y almacenar todos los batches de forma serial, se procede a procesar los ganadores.
+En este ejercicio, se tiene que realizar el sorteo después de que todas las agencias hayan publicado sus apuestas. Para esto, el servidor recibe por parámetro la cantidad de clientes que espera (esto se obtiene de los archivos de configuración o de una environment variable en su defecto).
+Después de recibir y almacenar todos los batches de forma serial, se procede a procesar los ganadores.
 
-Se leen las apuestas recibidas, buscando las apuestas ganadoras y se separan en un diccionario segun la agencia que las envio. Luego, se le envia a cada agencia la lista de sus ganadores, siguiendo la siguiente serializacion:
+Se leen las apuestas recibidas, buscando las apuestas ganadoras y se separan en un diccionario según la agencia que las envío. Luego, se le envía a cada agencia la lista de sus ganadores, siguiendo la siguiente serializacion:
 - Un byte indicando el tipo "ganador"
 - Un uint64 serializado indicando la longitud
 - Las apuestas serializadas siguiendo la serializacion del 6
 
 ### Ejercicio 8
-Para el ejercicio 8, se hizo uso de multithreading para el procesamiento paralelo de la informacion.
-Esto requirio el uso de los siguientes mecanismos de sincronización:
-- Un Lock para sincronizar la escritura de las bets en disco (a traves de la funcion `store_bets`).
+Para el ejercicio 8, se hizo uso de multithreading para el procesamiento paralelo de la información.
+Esto requirió el uso de los siguientes mecanismos de sincronización:
+- Un Lock para sincronizar la escritura de las bets en disco (a través de la función `store_bets`).
 - Un Lock para almacenar los sockets de los clientes.
-- Un Conditional variable para indicar cuando todos los clientes enviaron sus apuestas y asi enviar los ganadores.
+- Un Conditional variable para indicar cuando todos los clientes enviaron sus apuestas y así enviar los ganadores.
 
-El servidor maneja la concurrencia utilizando multithreading. El hilo principal inicialmente hace la lectura de las variables de ambiente e incializa el servidor; para luego iniciar su loop prinicipal.
+El servidor maneja la concurrencia utilizando multithreading. El hilo principal inicialmente hace la lectura de las variables de ambiente e inicializa el servidor; para luego iniciar su loop principal.
 
 Este consiste de lo siguiente:
-En el loop, el servidor se queda a la espera de la conexion de un cliente. Apenas detecta la conexion de un cliente, crea un thread nuevo y llama a la funcion `__handle_client_connection`. Es en este hilo donde se ejecuta la logica de recibimiento de las apuestas por cada cliente.
+En el loop, el servidor se queda a la espera de la conexión de un cliente. Apenas detecta la conexión de un cliente, crea un thread nuevo y llama a la función `__handle_client_connection`. Es en este hilo donde se ejecuta la lógica de recibimiento de las apuestas por cada cliente.
 
-Cuando el servidor detecta que llegaron todos los clientes que esperaba, comienza el procesamiento de la loteria en el thread principal; lo cual se ejecuta en la funcion `_handle_lottery`.
-El calculo de los ganadores solo se ejecuta cuando todos los clientes enviaron el mensaje de "fin de apuesta". Esta sincronización es manejada a traves de la Conditional variable `_client_finished_lock`, la cual es un integer que cada hilo cliente incrementa en 1 cuando recibe dicho mensaje.
+Cuando el servidor detecta que llegaron todos los clientes que esperaba, comienza el procesamiento de la lotería en el thread principal; lo cual se ejecuta en la función `_handle_lottery`.
+El calculo de los ganadores solo se ejecuta cuando todos los clientes enviaron el mensaje de "fin de apuesta". Esta sincronización es manejada a través de la Conditional variable `_client_finished_lock`, la cual es un integer que cada hilo cliente incrementa en 1 cuando recibe dicho mensaje.
 
-El hecho de estar usando multithreading en Python implica que el server no le va a poder sacar el mayor provecho a los hilos, debido a las limitaciones de sincronización que el GIL impone. Sin embargo, esta limitacion no deberia afectar sustancialmente a la implementacion debido a que cada hilo hace operaciones principalmente de I/O, las cuales [segun la documentacion oficial sobre el GIL](https://wiki.python.org/moin/GlobalInterpreterLock), ocurren por fuera de las areas afectadas por el GIL. Las unicas areas afectadas son las areas de procesamiento intermedio, las cuales solo implican la serializacion y desserializacion de los datos recibidos.
+El hecho de estar usando multithreading en Python implica que el server no le va a poder sacar el mayor provecho a los hilos, debido a las limitaciones de sincronización que el GIL impone. Sin embargo, esta limitación no debería afectar sustancialmente a la implementación debido a que cada hilo hace operaciones principalmente de I/O, las cuales [segun la documentación oficial sobre el GIL](https://wiki.python.org/moin/GlobalInterpreterLock), ocurren por fuera de las áreas afectadas por el GIL. Las únicas áreas afectadas son las áreas de procesamiento intermedio, las cuales solo implican la serializacion y desserializacion de los datos recibidos.
 
 
 ## Condiciones de Entrega
